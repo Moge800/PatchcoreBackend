@@ -109,13 +109,33 @@ class ModelLauncherGUI:
         self.current_model_name = new_model
         self._update_button_states()
         self.model_label.config(text=f"現在モデル名: {new_model}")
-        self.log_text.insert(tk.END, f'[モデル名更新] MODEL_NAME = "{new_model}"\n')
-        self.log_text.see(tk.END)
+        self._log_message(f'[モデル名更新] MODEL_NAME = "{new_model}"\n')
 
     def _update_button_states(self):
         match = self.selected_model.get() == self.current_model_name
         for widget in self.control_widgets:
             widget.config(state=tk.NORMAL if match else tk.DISABLED)
+
+    def _log_message(self, message):
+        """スレッドセーフなログ出力"""
+
+        def update():
+            self.log_text.insert(tk.END, message)
+            self.log_text.see(tk.END)
+
+        if threading.current_thread() is threading.main_thread():
+            update()
+        else:
+            self.root.after(0, update)
+
+    def _update_widgets_state(self, state):
+        """スレッドセーフなウィジェット状態更新"""
+
+        def update():
+            for widget in self.control_widgets:
+                widget.config(state=state)
+
+        self.root.after(0, update)
 
     def _on_edit_settings_click(self):
         settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
@@ -138,12 +158,11 @@ class ModelLauncherGUI:
 
     def _run_script_async(self, script_path, settings_path):
         def task():
-            for widget in self.control_widgets:
-                widget.config(state=tk.DISABLED)
+            # ボタンを無効化（メインスレッドで実行）
+            self._update_widgets_state(tk.DISABLED)
 
-            self.log_text.insert(tk.END, f"[実行開始] {script_path}\n")
-            self.log_text.insert(tk.END, f"使用設定: {settings_path}\n")
-            self.log_text.see(tk.END)
+            self._log_message(f"[実行開始] {script_path}\n")
+            self._log_message(f"使用設定: {settings_path}\n")
 
             try:
                 process = subprocess.Popen(
@@ -155,20 +174,21 @@ class ModelLauncherGUI:
                     cwd=os.path.abspath("."),
                 )
                 for line in process.stdout:
-                    self.log_text.insert(tk.END, line)
-                    self.log_text.see(tk.END)
-                process.wait()
-                self.log_text.insert(tk.END, "[実行完了]\n\n")
-            except Exception as e:
-                self.log_text.insert(tk.END, f"[エラー] {e}\n")
-            finally:
-                self._update_button_states()
-                self.log_text.see(tk.END)
+                    self._log_message(line)
 
-        threading.Thread(target=task).start()
+                process.wait()
+                self._log_message("[実行完了]\n\n")
+
+            except Exception as e:
+                self._log_message(f"[エラー] {e}\n")
+
+            finally:
+                # ボタン状態を復元（メインスレッドで実行）
+                self.root.after(0, self._update_button_states)
+
+        threading.Thread(target=task, daemon=True).start()
 
     def on_close(self):
-
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = os.path.join("settings", "gui_log", f"{timestamp}.log")
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
