@@ -1,0 +1,152 @@
+from fastapi import FastAPI, UploadFile, File, Query
+from fastapi.responses import JSONResponse, Response
+import numpy as np
+import cv2
+from PIL import Image
+from io import BytesIO
+from src.model.core.inference_engine import PatchCoreInferenceEngine
+from src.config.settings_loader import SettingsLoader
+import time
+from functools import wraps
+import inspect
+
+app = FastAPI()
+
+
+def engine_required(func):
+    @wraps(func)
+    async def async_wrapper(*args, **kwargs):
+        if engine is None:
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Engine not initialized"})
+        if inspect.iscoroutinefunction(func):
+            return await func(*args, **kwargs)
+        else:
+            return func(*args, **kwargs)
+
+    return async_wrapper
+
+
+def reload_engine():
+    global engine
+    try:
+        settings = SettingsLoader("settings/main_settings.py")
+        PatchCoreInferenceEngine._instance = None
+        engine = PatchCoreInferenceEngine(model_name=settings.get_variable("MODEL_NAME"))
+    except Exception:
+        print("[PatchCoreInferenceEngine]:reload_engine called")
+        import traceback
+
+        traceback.print_exc()
+        engine = None
+
+
+reload_engine()
+
+
+@app.post("/predict")
+@engine_required
+async def predict(file: UploadFile = File(...), detail_level: str = Query("basic", enum=["basic", "full"])):
+
+    try:
+        start = time.perf_counter()
+
+        image_bytes = await file.read()
+        pil_img = Image.open(BytesIO(image_bytes)).convert("RGB")
+        np_img = np.array(pil_img)
+        cv_img = cv2.cvtColor(np_img, cv2.COLOR_RGB2BGR)
+        result = engine.predict(cv_img)
+
+        end = time.perf_counter()
+
+        response_data = {
+            "label": result["label"],
+            "process_time": round(end - start, 2),
+            "image_id": result["image_id"],
+        }
+
+        if detail_level == "full":
+            response_data["thresholds"] = result["thresholds"]
+            response_data["z_stats"] = result["z_stats"]
+        else:
+            response_data["thresholds"] = result["thresholds"]
+            # basicモードでは必要最低限の統計のみ返す
+            response_data["z_stats"] = {k: result["z_stats"][k] for k in ["area", "maxval"] if k in result["z_stats"]}
+
+        return JSONResponse(content=response_data)
+
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/get_image")
+@engine_required
+async def get_image(image_id: str):
+
+    image = engine.get_image_by_id(image_id)
+    if image is None:
+        print(f"[画像取得失敗] image_id: {image_id}")
+        return JSONResponse(status_code=404, content={"error": "Image not found"})
+
+    _, buffer = cv2.imencode(".png", image)
+    return Response(content=buffer.tobytes(), media_type="image/png")
+
+
+@app.get("/get_image_list")
+@engine_required
+async def get_image_list(
+    limit: int = Query(100, ge=1, le=1000),
+    prefix: str = Query(None, enum=["org", "ovr"]),
+    label: str = Query(None, enum=["OK", "NG"]),
+    reverse_list: bool = Query(False),
+):
+
+    image_list = engine.get_store_image_list()
+    if prefix:
+        image_list = [img_id for img_id in image_list if img_id.startswith(prefix)]
+    if label:
+        image_list = [img_id for img_id in image_list if label in img_id]
+    if reverse_list:
+        image_list.reverse()
+    return JSONResponse(content={"image_list": image_list[:limit]})
+
+
+@app.post("/clear_image")
+@engine_required
+async def clear_image(execute: bool = Query(False)):
+
+    if execute:
+        engine.clear_store_image()
+        print("[PatchCoreInferenceEngine]:image cache cleared")
+        return JSONResponse(content={"status": "cleared"})
+    return JSONResponse(content={"status": "skipped"})
+
+
+@app.get("/status")
+@engine_required
+async def status():
+
+    return JSONResponse(
+        content={"status": "ok", "model": engine.get_model_name(), "image_cache": len(engine.get_store_image_list())}
+    )
+
+
+@app.post("/restart_engine")
+async def restart_engine(execute: bool = Query(False)):
+    if execute:
+        reload_engine()
+        print("[PatchCoreInferenceEngine]:reloaded complete")
+        return JSONResponse(content={"status": "reloaded", "model": engine.get_model_name()})
+    return JSONResponse(content={"status": "skipped"})
+
+
+if __name__ == "__main__":
+    DEBUG = False
+    if DEBUG:
+        import uvicorn
+
+        uvicorn.run(
+            "src.api.core.patchcore_api:app", host="0.0.0.0", port=8000, use_colors=False, workers=1, reload=True
+        )

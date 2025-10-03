@@ -1,0 +1,9 @@
+.taruv/
+.venv/
+__pycache__/
+*.png
+*.pkl
+*.pt
+*.log
+*.pyc
+.env

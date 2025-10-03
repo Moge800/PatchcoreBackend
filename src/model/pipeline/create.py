@@ -1,0 +1,141 @@
+import os
+import cv2
+import torch
+import torch.nn as nn
+import numpy as np
+import pickle
+from sklearn.decomposition import PCA
+from torchvision.models import resnet18, ResNet18_Weights
+from PIL import Image, ImageFilter, ImageEnhance
+from src.config.settings_loader import SettingsLoader
+from settings import main_settings
+from src.model.utils.inference_utils import preprocess_cv2, load_image_unicode_path
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+
+class FeatureExtractor(nn.Module):
+    def __init__(self, depth: int = 1):
+        super().__init__()
+        resnet = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
+
+        self.layer0 = nn.Sequential(resnet.conv1, resnet.bn1, resnet.relu, resnet.maxpool)
+        self.layer1 = resnet.layer1
+        self.layer2 = resnet.layer2 if depth >= 2 else None
+        self.layer3 = resnet.layer3 if depth >= 3 else None
+        self.layer4 = resnet.layer4 if depth >= 4 else None
+        self.depth = depth
+
+    def forward(self, x):
+        x = self.layer0(x)
+        x = self.layer1(x)
+        if self.depth >= 2:
+            x = self.layer2(x)
+        if self.depth >= 3:
+            x = self.layer3(x)
+        if self.depth >= 4:
+            x = self.layer4(x)
+        return x
+
+
+def run_creator():
+    MODEL_NAME = main_settings.MODEL_NAME
+    DATASET_DIR = os.path.join("datasets", MODEL_NAME)
+    NORMAL_DIR = os.path.join(DATASET_DIR, "normal")
+    AUGMENTED_DIR = os.path.join(DATASET_DIR, "normal_augmented")
+    MODEL_DIR = os.path.join("models", MODEL_NAME)
+    SETTINGS_PATH = os.path.join("settings", "models", MODEL_NAME, "settings.py")
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
+    loader = SettingsLoader(SETTINGS_PATH)
+    AFFINE_POINTS = loader.get_variable("AFFINE_POINTS")
+    IMAGE_SIZE = loader.get_variable("IMAGE_SIZE")
+    PCA_VARIANCE = loader.get_variable("PCA_VARIANCE")
+    ENABLE_AUGMENT = loader.get_variable("ENABLE_AUGMENT")
+    SAVE_FORMAT = loader.get_variable("SAVE_FORMAT")
+    FEATURE_DEPTH = loader.get_variable("FEATURE_DEPTH")
+
+    if ENABLE_AUGMENT and not os.path.isdir(AUGMENTED_DIR):
+        os.makedirs(AUGMENTED_DIR, exist_ok=True)
+        i = 0
+        for fname in os.listdir(NORMAL_DIR):
+            if fname.lower().endswith(".png"):
+                path = os.path.join(NORMAL_DIR, fname)
+                image = Image.open(path).convert("RGB")
+                blurred = image.filter(ImageFilter.GaussianBlur(radius=2))
+                enhanced = ImageEnhance.Brightness(blurred).enhance(1.2)
+                enhanced = ImageEnhance.Contrast(enhanced).enhance(1.3)
+                enhanced = ImageEnhance.Color(enhanced).enhance(1.1)
+                enhanced.save(os.path.join(AUGMENTED_DIR, f"aug_{fname}"))
+                sharp_img = ImageEnhance.Sharpness(image).enhance(1.2)
+                sharp_img.save(os.path.join(AUGMENTED_DIR, f"aug_s_{fname}"))
+                i += 1
+        logging.info(f"data augments make data={i}")
+
+    image_paths = []
+    for subdir in [NORMAL_DIR, AUGMENTED_DIR] if ENABLE_AUGMENT else [NORMAL_DIR]:
+        for fname in os.listdir(subdir):
+            if fname.lower().endswith(".png"):
+                image_paths.append(os.path.join(subdir, fname))
+
+    model = FeatureExtractor(FEATURE_DEPTH)
+    model.eval()
+    memory_bank = []
+
+    with torch.no_grad():
+        for idx, path in enumerate(image_paths):
+            image = load_image_unicode_path(path)
+            inputs = preprocess_cv2(image, AFFINE_POINTS, IMAGE_SIZE)
+            fmap = model(inputs)
+            patches = fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1))
+            memory_bank.append(patches.numpy())
+            if idx % 10 == 0:
+                logging.info(f"学習実行中... {idx+1}/{len(image_paths)}")
+
+    memory_bank = np.concatenate(memory_bank, axis=0)
+    pca = PCA(n_components=PCA_VARIANCE)
+    memory_bank_compressed = pca.fit_transform(memory_bank)
+
+    if SAVE_FORMAT == "compressed":
+        with open(os.path.join(MODEL_DIR, "memory_bank_compressed.pkl"), "wb") as f:
+            pickle.dump(memory_bank_compressed, f)
+    else:
+        with open(os.path.join(MODEL_DIR, "memory_bank.pkl"), "wb") as f:
+            pickle.dump(memory_bank, f)
+
+    with open(os.path.join(MODEL_DIR, "pca.pkl"), "wb") as f:
+        pickle.dump(pca, f)
+
+    example_input = torch.randn(1, 3, *IMAGE_SIZE)
+    scripted_model = torch.jit.trace(model, example_input)
+    scripted_model.save(os.path.join(MODEL_DIR, "model.pt"))
+    logging.info(f"\nモデルとメモリバンク（{SAVE_FORMAT}）を {MODEL_DIR} に保存しました。")
+
+    score_maps = []
+    with torch.no_grad():
+        for idx, path in enumerate(image_paths):
+            image = load_image_unicode_path(path)
+            inputs = preprocess_cv2(image, AFFINE_POINTS, IMAGE_SIZE)
+            fmap = model(inputs)
+            patches = fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1)).numpy()
+            patches = pca.transform(patches)
+            scores = np.linalg.norm(patches - memory_bank_compressed.mean(axis=0), axis=1)
+            score_map = scores.reshape(fmap.shape[2], fmap.shape[3])
+            raw_score_map = cv2.resize(score_map, IMAGE_SIZE, interpolation=cv2.INTER_CUBIC)
+            score_maps.append(raw_score_map)
+            if idx % 10 == 0:
+                logging.info(f"Z-scoreマップ作成中... {idx+1}/{len(image_paths)}")
+
+    score_maps = np.stack(score_maps)
+    pixel_mean = np.mean(score_maps, axis=0)
+    pixel_std = np.std(score_maps, axis=0)
+
+    with open(os.path.join(MODEL_DIR, "pixel_stats.pkl"), "wb") as f:
+        pickle.dump((pixel_mean, pixel_std), f)
+
+    logging.info("\nピクセル単位のZスコア統計を保存しました: pixel_stats.pkl")
+
+
+if __name__ == "__main__":
+    run_creator()
