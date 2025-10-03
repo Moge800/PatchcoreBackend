@@ -11,6 +11,7 @@ from src.config.settings_loader import SettingsLoader
 from src.model.utils.model_loader import load_model_and_assets
 from src.model.utils.inference_utils import preprocess_cv2
 from src.model.utils.score_utils import evaluate_z_score_map, is_ok_z
+from src.model.utils.device_utils import get_device, clear_gpu_cache
 
 
 class PatchCoreInferenceEngine:
@@ -37,9 +38,18 @@ class PatchCoreInferenceEngine:
         self.loader = SettingsLoader(self.settings_path)
         self._reload_settings()
 
+        # GPU設定
+        self.use_gpu = self.loader.get_variable("USE_GPU")
+        self.device_id = self.loader.get_variable("GPU_DEVICE_ID")
+        self.use_mixed_precision = self.loader.get_variable("USE_MIXED_PRECISION")
+        self.device = get_device(self.use_gpu, self.device_id)
+
         self.model, self.memory_bank, self.pca, self.pixel_mean, self.pixel_std = load_model_and_assets(
             self.model_dir, self.save_format
         )
+
+        # モデルをGPUに移動
+        self.model = self.model.to(self.device)
         self.pixel_std_safe = np.where(self.pixel_std == 0, 1e-6, self.pixel_std)
 
         self.image_store = OrderedDict()
@@ -47,6 +57,7 @@ class PatchCoreInferenceEngine:
         self._warmup()
 
         print(f"[PatchCoreInferenceEngine]:Start id={id(self)} model={self.model_name}")
+        print(f"[PatchCoreInferenceEngine]:Device={self.device}, Mixed Precision={self.use_mixed_precision}")
 
     def _reload_settings(self):
         self.loader.reload()
@@ -58,12 +69,19 @@ class PatchCoreInferenceEngine:
         self.z_max_threshold = self.loader.get_variable("Z_MAX_THRESHOLD")
         self.ng_image_save = self.loader.get_variable("NG_IMAGE_SAVE")
         self.max_images = self.loader.get_variable("MAX_CACHE_IMAGE")
+
+        # GPU設定の再読み込み
+        self.use_gpu = self.loader.get_variable("USE_GPU")
+        self.device_id = self.loader.get_variable("GPU_DEVICE_ID")
+        self.use_mixed_precision = self.loader.get_variable("USE_MIXED_PRECISION")
+
         print(f"[PatchCoreInferenceEngine]:settings reloaded for model={self.model_name}")
 
     def _warmup(self):
         try:
             dummy = np.zeros((self.image_size[1], self.image_size[0], 3), dtype=np.uint8)
             inputs = preprocess_cv2(dummy, self.affine_points, self.image_size)
+            inputs = inputs.to(self.device)
             _ = self._run_model(inputs)
             print("[PatchCoreInferenceEngine]:warmup complete")
         except Exception as e:
@@ -73,6 +91,8 @@ class PatchCoreInferenceEngine:
         return str(self.model_name)
 
     def __del__(self):
+        # GPU キャッシュクリア
+        clear_gpu_cache()
         print(f"[PatchCoreInferenceEngine]:End id={id(self)} model={self.model_name}")
 
     def _log_result(self, result: dict) -> None:
@@ -103,9 +123,18 @@ class PatchCoreInferenceEngine:
         self.image_store = OrderedDict()
 
     def _run_model(self, inputs: torch.Tensor) -> np.ndarray:
+        inputs = inputs.to(self.device)
+
         with torch.no_grad():
-            fmap = self.model(inputs)
-            patches = fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1)).numpy()
+            # 新しいautocast APIを使用
+            if self.use_mixed_precision and self.device.type == "cuda":
+                with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
+                    fmap = self.model(inputs)
+            else:
+                fmap = self.model(inputs)
+
+            patches = fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1))
+            patches = patches.cpu().numpy()  # CPUに戻す
             patches = self.pca.transform(patches)
             scores = np.linalg.norm(patches - self.memory_bank.mean(axis=0), axis=1)
             return scores.reshape(fmap.shape[2], fmap.shape[3])
@@ -175,6 +204,7 @@ class PatchCoreInferenceEngine:
         # 結果整形とログ
         result = self._result_gen(label_str, z_stats, image_id)
         self._log_result(result)
+
         return result
 
     def _save_ng_images_async(self, save_dir: str, image_id: str, overlay: np.ndarray, original: np.ndarray) -> None:

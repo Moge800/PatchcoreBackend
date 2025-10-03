@@ -10,9 +10,11 @@ from PIL import Image, ImageFilter, ImageEnhance
 from src.config.settings_loader import SettingsLoader
 from settings import main_settings
 from src.model.utils.inference_utils import preprocess_cv2, load_image_unicode_path
+from src.model.utils.device_utils import get_device, clear_gpu_cache
 import logging
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
 
 
 class FeatureExtractor(nn.Module):
@@ -56,6 +58,14 @@ def run_creator():
     SAVE_FORMAT = loader.get_variable("SAVE_FORMAT")
     FEATURE_DEPTH = loader.get_variable("FEATURE_DEPTH")
 
+    # GPU設定の読み込み
+    USE_GPU = loader.get_variable("USE_GPU")
+    GPU_DEVICE_ID = loader.get_variable("GPU_DEVICE_ID")
+    USE_MIXED_PRECISION = loader.get_variable("USE_MIXED_PRECISION")
+
+    # デバイス設定
+    device = get_device(USE_GPU, GPU_DEVICE_ID)
+
     if ENABLE_AUGMENT and not os.path.isdir(AUGMENTED_DIR):
         os.makedirs(AUGMENTED_DIR, exist_ok=True)
         i = 0
@@ -80,16 +90,28 @@ def run_creator():
                 image_paths.append(os.path.join(subdir, fname))
 
     model = FeatureExtractor(FEATURE_DEPTH)
+    model = model.to(device)  # モデルをGPUに移動
     model.eval()
     memory_bank = []
+
+    # 混合精度演算の設定（新しいAPI）
+    scaler = torch.amp.GradScaler('cuda') if USE_MIXED_PRECISION and device.type == "cuda" else None
 
     with torch.no_grad():
         for idx, path in enumerate(image_paths):
             image = load_image_unicode_path(path)
             inputs = preprocess_cv2(image, AFFINE_POINTS, IMAGE_SIZE)
-            fmap = model(inputs)
+            inputs = inputs.to(device)  # 入力をGPUに移動
+
+            if scaler and USE_MIXED_PRECISION:
+                with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
+                    fmap = model(inputs)
+            else:
+                fmap = model(inputs)
+
             patches = fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1))
-            memory_bank.append(patches.numpy())
+            memory_bank.append(patches.cpu().numpy())  # CPUに戻してからnumpy変換
+
             if idx % 10 == 0:
                 logging.info(f"学習実行中... {idx+1}/{len(image_paths)}")
 
@@ -117,8 +139,15 @@ def run_creator():
         for idx, path in enumerate(image_paths):
             image = load_image_unicode_path(path)
             inputs = preprocess_cv2(image, AFFINE_POINTS, IMAGE_SIZE)
-            fmap = model(inputs)
-            patches = fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1)).numpy()
+            inputs = inputs.to(device)  # 入力をGPUに移動
+
+            if scaler and USE_MIXED_PRECISION:
+                with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
+                    fmap = model(inputs)
+            else:
+                fmap = model(inputs)
+
+            patches = fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1)).cpu().numpy()
             patches = pca.transform(patches)
             scores = np.linalg.norm(patches - memory_bank_compressed.mean(axis=0), axis=1)
             score_map = scores.reshape(fmap.shape[2], fmap.shape[3])
@@ -135,6 +164,9 @@ def run_creator():
         pickle.dump((pixel_mean, pixel_std), f)
 
     logging.info("\nピクセル単位のZスコア統計を保存しました: pixel_stats.pkl")
+
+    # GPU キャッシュクリア
+    clear_gpu_cache()
 
 
 if __name__ == "__main__":

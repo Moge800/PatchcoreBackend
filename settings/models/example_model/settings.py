@@ -48,3 +48,19 @@ SAVE_FORMAT = "compressed"
 # -----inference_engine設定-----
 NG_IMAGE_SAVE = True
 MAX_CACHE_IMAGE = 1200
+
+# -----GPU設定-----
+# GPUを使用するかどうか（TrueでGPU使用、FalseでCPU使用）
+USE_GPU = True  # GPU環境が整ったらTrueに変更
+
+# 使用するGPUデバイスID（複数GPU環境での指定）
+GPU_DEVICE_ID = 0
+
+# 混合精度演算の使用（GPU環境でのメモリ効率向上）
+USE_MIXED_PRECISION = True  # GPU環境でのみ有効
+
+# CPU環境での最適化設定
+CPU_OPTIMIZATION = {
+    "threads": 4,  # 利用可能なCPUコア数に応じて調整
+    "memory_efficient": True,  # メモリ効率重視モード
+}

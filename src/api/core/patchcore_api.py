@@ -9,6 +9,8 @@ from src.config.settings_loader import SettingsLoader
 import time
 from functools import wraps
 import inspect
+from src.model.utils.device_utils import get_gpu_memory_info, check_gpu_environment
+import torch
 
 app = FastAPI()
 
@@ -140,6 +142,58 @@ async def restart_engine(execute: bool = Query(False)):
         print("[PatchCoreInferenceEngine]:reloaded complete")
         return JSONResponse(content={"status": "reloaded", "model": engine.get_model_name()})
     return JSONResponse(content={"status": "skipped"})
+
+
+@app.get("/gpu_info")
+@engine_required
+async def gpu_info():
+    """GPU情報を取得"""
+    # 基本情報
+    info = check_gpu_environment()
+
+    # エンジンの現在のデバイス情報
+    if engine and hasattr(engine, "device"):
+        info["current_device"] = str(engine.device)
+        info["mixed_precision"] = getattr(engine, "use_mixed_precision", False)
+
+    # メモリ情報
+    info["memory"] = get_gpu_memory_info()
+
+    if torch.cuda.is_available():
+        # 詳細なメモリ情報
+        for i in range(torch.cuda.device_count()):
+            props = torch.cuda.get_device_properties(i)
+            info[f"gpu_{i}_properties"] = {
+                "name": props.name,
+                "total_memory": f"{props.total_memory / 1e9:.1f}GB",
+                "multi_processor_count": props.multi_processor_count,
+                "major": props.major,
+                "minor": props.minor,
+            }
+
+    return JSONResponse(content=info)
+
+
+@app.get("/system_info")
+async def system_info():
+    """システム情報を取得（GPU要件なし）"""
+    try:
+        import platform
+        import psutil
+        import torch
+
+        info = {
+            "platform": platform.platform(),
+            "cpu_count": psutil.cpu_count(),
+            "memory_total": f"{psutil.virtual_memory().total / 1e9:.1f}GB",
+            "memory_available": f"{psutil.virtual_memory().available / 1e9:.1f}GB",
+            "pytorch_version": torch.__version__,
+            "cuda_support": torch.cuda.is_available(),
+        }
+
+        return JSONResponse(content=info)
+    except Exception as e:
+        return JSONResponse(content={"error": f"システム情報の取得に失敗: {str(e)}"}, status_code=500)
 
 
 if __name__ == "__main__":
