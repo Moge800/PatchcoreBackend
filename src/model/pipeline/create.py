@@ -95,7 +95,7 @@ def run_creator():
     memory_bank = []
 
     # 混合精度演算の設定（新しいAPI）
-    scaler = torch.amp.GradScaler('cuda') if USE_MIXED_PRECISION and device.type == "cuda" else None
+    scaler = torch.amp.GradScaler("cuda") if USE_MIXED_PRECISION and device.type == "cuda" else None
 
     with torch.no_grad():
         for idx, path in enumerate(image_paths):
@@ -129,10 +129,15 @@ def run_creator():
     with open(os.path.join(MODEL_DIR, "pca.pkl"), "wb") as f:
         pickle.dump(pca, f)
 
-    example_input = torch.randn(1, 3, *IMAGE_SIZE)
-    scripted_model = torch.jit.trace(model, example_input)
+    # モデル保存時にCPUに移動してからトレース
+    model_cpu = model.cpu()
+    example_input = torch.randn(1, 3, *IMAGE_SIZE)  # CPUテンソル
+    scripted_model = torch.jit.trace(model_cpu, example_input)
     scripted_model.save(os.path.join(MODEL_DIR, "model.pt"))
     logging.info(f"\nモデルとメモリバンク（{SAVE_FORMAT}）を {MODEL_DIR} に保存しました。")
+
+    # Zスコアマップ作成のためにモデルを再度GPUに移動
+    model = model.to(device)
 
     score_maps = []
     with torch.no_grad():
