@@ -6,10 +6,12 @@
 
 - **高速推論**: CPU環境で平均35ms、約30枚/秒のスループット
 - **GPU対応**: CUDA環境でのGPUアクセラレーション対応
-- **柔軟な設定**: モデルごとの独立した設定管理
+- **柔軟な設定**: モデル設定（settings.py）と環境設定（.env）の分離管理
 - **REST API**: FastAPIによる高速かつ型安全なAPI
 - **GUI**: 使いやすい学習・推論実行インターフェース
 - **画像キャッシュ**: 推論結果の一時保存機能
+- **設定検証**: GUI/CLIによる設定ファイルの妥当性チェック
+- **統一ログ**: 環境変数で制御可能なロギングシステム
 
 ## 📋 システム要件
 
@@ -45,6 +47,19 @@ pip install -r requirements-cpu.txt
 ```bash
 pip install -r requirements-gpu.txt
 ```
+
+### 4. 環境変数の設定
+
+```powershell
+# .envファイルを作成（初回のみ）
+Copy-Item .env.example .env
+
+# 必要に応じて.envファイルを編集
+# USE_GPU=True  # GPU使用する場合
+# LOG_LEVEL=DEBUG  # デバッグログを有効化
+```
+
+詳細は [環境変数ガイド](docs/ENV_GUIDE.md) と [設定ガイド](docs/SETTINGS_GUIDE.md) を参照してください。
 
 ## 📂 プロジェクト構造
 
