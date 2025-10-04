@@ -13,9 +13,9 @@ if (Test-Path ".env") {
     }
 }
 
-# API_PORTを取得（デフォルト8000）
-$apiPort = if ($env:API_PORT) { $env:API_PORT } else { "8000" }
-$apiHost = if ($env:API_HOST) { $env:API_HOST } else { "0.0.0.0" }
+# APIサーバー設定を取得（新しい変数名を優先、なければ旧変数名）
+$apiHost = if ($env:API_SERVER_HOST) { $env:API_SERVER_HOST } elseif ($env:API_HOST) { $env:API_HOST } else { "0.0.0.0" }
+$apiPort = if ($env:API_SERVER_PORT) { $env:API_SERVER_PORT } elseif ($env:API_PORT) { $env:API_PORT } else { "8000" }
 
 Write-Host "Starting API Server on ${apiHost}:${apiPort}..."
 

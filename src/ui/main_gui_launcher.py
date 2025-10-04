@@ -295,8 +295,10 @@ class ModelLauncherGUI:
             self._log_message(f"  DEFAULT_MODEL_NAME: {env_loader.DEFAULT_MODEL_NAME}\n")
             self._log_message(f"  LOG_LEVEL: {env_loader.LOG_LEVEL}\n")
             self._log_message(f"  LOG_DIR: {env_loader.LOG_DIR}\n")
-            self._log_message(f"  API_HOST: {env_loader.API_HOST}\n")
-            self._log_message(f"  API_PORT: {env_loader.API_PORT}\n\n")
+            self._log_message(f"  API_SERVER_HOST: {env_loader.API_SERVER_HOST}\n")
+            self._log_message(f"  API_SERVER_PORT: {env_loader.API_SERVER_PORT}\n")
+            self._log_message(f"  API_CLIENT_HOST: {env_loader.API_CLIENT_HOST}\n")
+            self._log_message(f"  API_CLIENT_PORT: {env_loader.API_CLIENT_PORT}\n\n")
 
             # ===== 詳細検証 =====
             self._log_message("【設定検証】\n")

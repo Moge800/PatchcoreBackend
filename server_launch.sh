@@ -11,9 +11,9 @@ if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
 fi
 
-# API_PORT を取得（デフォルト8000）
-API_PORT=${API_PORT:-8000}
-API_HOST=${API_HOST:-0.0.0.0}
+# APIサーバー設定を取得（新しい変数名を優先、なければ旧変数名）
+API_HOST=${API_SERVER_HOST:-${API_HOST:-0.0.0.0}}
+API_PORT=${API_SERVER_PORT:-${API_PORT:-8000}}
 
 echo "Starting API Server on ${API_HOST}:${API_PORT}..."
 

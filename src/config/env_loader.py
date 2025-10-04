@@ -81,8 +81,19 @@ APP_VERSION = env_loader.get("APP_VERSION", "1.0.0")
 DEBUG = env_loader.get("DEBUG", False, bool)
 
 # APIサーバー設定
-API_HOST = env_loader.get("API_HOST", "0.0.0.0")
-API_PORT = env_loader.get("API_PORT", 8000, int)
+# ===== API設定 =====
+# サーバー設定（バインドアドレス）
+API_SERVER_HOST = env_loader.get("API_SERVER_HOST", "0.0.0.0")
+API_SERVER_PORT = env_loader.get("API_SERVER_PORT", 8000, int)
+
+# クライアント設定（接続先アドレス）
+API_CLIENT_HOST = env_loader.get("API_CLIENT_HOST", "127.0.0.1")
+API_CLIENT_PORT = env_loader.get("API_CLIENT_PORT", 8000, int)
+
+# 後方互換性のための旧変数名（非推奨）
+API_HOST = API_CLIENT_HOST  # 旧名称、新コードではAPI_CLIENT_HOSTを使用
+API_PORT = API_CLIENT_PORT  # 旧名称、新コードではAPI_CLIENT_PORTを使用
+
 API_RELOAD = env_loader.get("API_RELOAD", False, bool)
 API_WORKERS = env_loader.get("API_WORKERS", 1, int)
 

@@ -203,8 +203,8 @@ if __name__ == "__main__":
 
         uvicorn.run(
             "src.api.core.patchcore_api:app",
-            host=env_loader.API_HOST,
-            port=env_loader.API_PORT,
+            host=env_loader.API_SERVER_HOST,
+            port=env_loader.API_SERVER_PORT,
             use_colors=False,
             workers=1,
             reload=True,
