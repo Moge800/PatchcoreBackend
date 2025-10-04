@@ -12,6 +12,8 @@ from src.model.utils.model_loader import load_model_and_assets
 from src.model.utils.inference_utils import preprocess_cv2
 from src.model.utils.score_utils import evaluate_z_score_map, is_ok_z
 from src.model.utils.device_utils import get_device, clear_gpu_cache
+from src.utils.logger import setup_logger
+from src.types import PredictionResult, LabelType
 
 
 class PatchCoreInferenceEngine:
@@ -29,6 +31,9 @@ class PatchCoreInferenceEngine:
         if self._initialized:
             return
         self._initialized = True
+
+        # ロガー初期化
+        self.logger = setup_logger(f"inference_engine_{model_name}", log_dir="logs/inference")
 
         self.model_name = model_name
         self.model_dir = os.path.join("models", model_name)
@@ -56,8 +61,8 @@ class PatchCoreInferenceEngine:
 
         self._warmup()
 
-        print(f"[PatchCoreInferenceEngine]:Start id={id(self)} model={self.model_name}")
-        print(f"[PatchCoreInferenceEngine]:Device={self.device}, Mixed Precision={self.use_mixed_precision}")
+        self.logger.info(f"PatchCoreInferenceEngine started - id={id(self)}, model={self.model_name}")
+        self.logger.info(f"Device={self.device}, Mixed Precision={self.use_mixed_precision}")
 
     def _reload_settings(self):
         self.loader.reload()
@@ -75,7 +80,7 @@ class PatchCoreInferenceEngine:
         self.device_id = self.loader.get_variable("GPU_DEVICE_ID")
         self.use_mixed_precision = self.loader.get_variable("USE_MIXED_PRECISION")
 
-        print(f"[PatchCoreInferenceEngine]:settings reloaded for model={self.model_name}")
+        self.logger.info(f"Settings reloaded for model={self.model_name}")
 
     def _warmup(self):
         try:
@@ -83,9 +88,9 @@ class PatchCoreInferenceEngine:
             inputs = preprocess_cv2(dummy, self.affine_points, self.image_size)
             inputs = inputs.to(self.device)
             _ = self._run_model(inputs)
-            print("[PatchCoreInferenceEngine]:warmup complete")
+            self.logger.info("Warmup complete")
         except Exception as e:
-            print(f"[PatchCoreInferenceEngine]:warmup failed: {e}")
+            self.logger.error(f"Warmup failed: {e}", exc_info=True)
 
     def get_model_name(self) -> str:
         return str(self.model_name)
@@ -93,7 +98,7 @@ class PatchCoreInferenceEngine:
     def __del__(self):
         # GPU キャッシュクリア
         clear_gpu_cache()
-        print(f"[PatchCoreInferenceEngine]:End id={id(self)} model={self.model_name}")
+        self.logger.info(f"PatchCoreInferenceEngine ended - id={id(self)}, model={self.model_name}")
 
     def _log_result(self, result: dict) -> None:
         date_str = datetime.now().strftime("%Y%m%d")
@@ -152,7 +157,7 @@ class PatchCoreInferenceEngine:
         input_img = (inputs.squeeze(0).permute(1, 2, 0).numpy() * 255).astype(np.uint8)
         return cv2.addWeighted(cv2.cvtColor(input_img, cv2.COLOR_RGB2BGR), 0.6, heatmap, 0.4, 0)
 
-    def _result_gen(self, label: str, z_stats: dict, image_id: str) -> dict:
+    def _result_gen(self, label: LabelType, z_stats: dict, image_id: str) -> PredictionResult:
         return {
             "label": label,
             "z_stats": {k: float(v) for k, v in z_stats.items()},
@@ -167,7 +172,7 @@ class PatchCoreInferenceEngine:
             },
         }
 
-    def predict(self, image_array: np.ndarray) -> dict:
+    def predict(self, image_array: np.ndarray) -> PredictionResult:
         # 入力画像のテンソル化
         inputs = preprocess_cv2(image_array, self.affine_points, self.image_size)
 
@@ -213,6 +218,6 @@ class PatchCoreInferenceEngine:
                 cv2.imwrite(os.path.join(save_dir, f"{image_id}_overlay.png"), overlay)
                 cv2.imwrite(os.path.join(save_dir, f"{image_id}_original.png"), original)
             except Exception as e:
-                print(f"[NG保存失敗]: {e}")
+                self.logger.error(f"NG image save failed: {e}")
 
         threading.Thread(target=save, daemon=True).start()
