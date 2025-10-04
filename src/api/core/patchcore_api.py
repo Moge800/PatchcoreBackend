@@ -5,14 +5,17 @@ import cv2
 from PIL import Image
 from io import BytesIO
 from src.model.core.inference_engine import PatchCoreInferenceEngine
-from src.config.settings_loader import SettingsLoader
 import time
 from functools import wraps
 import inspect
 from src.model.utils.device_utils import get_gpu_memory_info, check_gpu_environment
 import torch
+from src.utils.logger import setup_logger
+from src.types import DetailLevel
+from src.config import env_loader
 
-app = FastAPI()
+app = FastAPI(title=env_loader.APP_NAME, version=env_loader.APP_VERSION)
+logger = setup_logger("patchcore_api", log_dir=env_loader.LOG_DIR + "/api")
 
 
 def engine_required(func):
@@ -31,14 +34,13 @@ def engine_required(func):
 def reload_engine():
     global engine
     try:
-        settings = SettingsLoader("settings/main_settings.py")
+        # .envからモデル名を取得
+        model_name = env_loader.DEFAULT_MODEL_NAME
         PatchCoreInferenceEngine._instance = None
-        engine = PatchCoreInferenceEngine(model_name=settings.get_variable("MODEL_NAME"))
-    except Exception:
-        print("[PatchCoreInferenceEngine]:reload_engine called")
-        import traceback
-
-        traceback.print_exc()
+        engine = PatchCoreInferenceEngine(model_name=model_name)
+        logger.info("Engine reloaded successfully")
+    except Exception as e:
+        logger.error(f"Failed to reload engine: {e}", exc_info=True)
         engine = None
 
 
@@ -47,7 +49,7 @@ reload_engine()
 
 @app.post("/predict")
 @engine_required
-async def predict(file: UploadFile = File(...), detail_level: str = Query("basic", enum=["basic", "full"])):
+async def predict(file: UploadFile = File(...), detail_level: DetailLevel = Query("basic", enum=["basic", "full"])):
 
     try:
         start = time.perf_counter()
@@ -77,9 +79,7 @@ async def predict(file: UploadFile = File(...), detail_level: str = Query("basic
         return JSONResponse(content=response_data)
 
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
+        logger.error(f"Prediction error: {e}", exc_info=True)
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
@@ -89,7 +89,7 @@ async def get_image(image_id: str):
 
     image = engine.get_image_by_id(image_id)
     if image is None:
-        print(f"[画像取得失敗] image_id: {image_id}")
+        logger.warning(f"Image not found: {image_id}")
         return JSONResponse(status_code=404, content={"error": "Image not found"})
 
     _, buffer = cv2.imencode(".png", image)
@@ -121,7 +121,7 @@ async def clear_image(execute: bool = Query(False)):
 
     if execute:
         engine.clear_store_image()
-        print("[PatchCoreInferenceEngine]:image cache cleared")
+        logger.info("Image cache cleared")
         return JSONResponse(content={"status": "cleared"})
     return JSONResponse(content={"status": "skipped"})
 
@@ -139,7 +139,7 @@ async def status():
 async def restart_engine(execute: bool = Query(False)):
     if execute:
         reload_engine()
-        print("[PatchCoreInferenceEngine]:reloaded complete")
+        logger.info("Engine reloaded complete")
         return JSONResponse(content={"status": "reloaded", "model": engine.get_model_name()})
     return JSONResponse(content={"status": "skipped"})
 
@@ -202,5 +202,10 @@ if __name__ == "__main__":
         import uvicorn
 
         uvicorn.run(
-            "src.api.core.patchcore_api:app", host="0.0.0.0", port=8000, use_colors=False, workers=1, reload=True
+            "src.api.core.patchcore_api:app",
+            host=env_loader.API_HOST,
+            port=env_loader.API_PORT,
+            use_colors=False,
+            workers=1,
+            reload=True,
         )
