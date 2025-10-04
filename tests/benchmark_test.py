@@ -10,7 +10,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import time
 import statistics
 import glob
-import numpy as np
+
+# import numpy as np
 from src.api.client.patchcore_api_client import PatchCoreApiClient
 from src.model.utils.inference_utils import load_image_unicode_path
 
