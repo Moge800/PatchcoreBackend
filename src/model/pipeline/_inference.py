@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 from sklearn.decomposition import PCA
 from src.config.settings_loader import SettingsLoader
-from settings import main_settings
+from src.config import env_loader
 import logging
 from src.model.utils.inference_utils import preprocess_cv2, evaluate_z_score_map, is_ok_z
 
@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 def main():
-    MODEL_NAME = main_settings.MODEL_NAME
+    MODEL_NAME = env_loader.DEFAULT_MODEL_NAME
     MODEL_DIR = os.path.join("models", MODEL_NAME)
     SETTINGS_DIR = os.path.join("settings", "models", MODEL_NAME)
     SETTINGS_PATH = os.path.join(SETTINGS_DIR, "settings.py")

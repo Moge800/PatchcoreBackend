@@ -2,10 +2,13 @@ import requests
 import numpy as np
 import time
 from src.api.utils.api_util import convert_image_to_png_bytes, convert_png_bytes_to_ndarray, ApiUrlBuilder
+from src.config import env_loader
 
 
 class PatchCoreApiClient:
-    def __init__(self, base_url: str = "http://localhost:8000", timeout: int = 5):
+    def __init__(self, base_url: str = None, timeout: int = 5):
+        if base_url is None:
+            base_url = f"http://{env_loader.API_HOST}:{env_loader.API_PORT}"
         self.base_url = base_url.rstrip("/")
         self.url_builder = ApiUrlBuilder(self.base_url)
         self.session = requests.Session()
