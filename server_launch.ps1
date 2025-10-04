@@ -35,3 +35,6 @@ for ($i = 0; $i -lt $maxWait; $i++) {
         Start-Sleep -Milliseconds 500
     }
 }
+
+# Wait for the server process to exit so the $process variable is actually used
+$process | Wait-Process
