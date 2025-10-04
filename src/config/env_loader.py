@@ -5,7 +5,7 @@
 
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from dotenv import load_dotenv
 
 # プロジェクトルートの.envファイルを読み込み
@@ -17,101 +17,106 @@ if _env_path.exists():
     load_dotenv(_env_path)
 
 
-def get_env(key: str, default: Any = None, cast_type: type = str) -> Any:
-    """
-    環境変数を取得し、型変換を行う
+class EnvLoader:
+    """環境変数を型変換して読み込むクラス"""
 
-    Args:
-        key (str): 環境変数名
-        default (Any): デフォルト値
-        cast_type (type): 変換する型
+    def __init__(self, env_file: str = ".env"):
+        self.env_file = env_file
+        self._load_env()
 
-    Returns:
-        Any: 環境変数の値（型変換済み）
-    """
-    value = os.getenv(key)
+    def _load_env(self):
+        """環境変数ファイルを読み込む"""
+        if not os.path.exists(self.env_file):
+            print(f"[Warning] {self.env_file} が見つかりません")
+            return
 
-    if value is None:
-        return default
+        with open(self.env_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    key, value = line.split("=", 1)
+                    os.environ[key.strip()] = value.strip()
 
-    try:
-        if cast_type == bool:
-            # bool型の特殊処理
-            return value.lower() in ("true", "1", "yes", "on")
-        elif cast_type == int:
-            return int(value)
-        elif cast_type == float:
-            return float(value)
-        elif cast_type == str:
-            return value
-        else:
-            return cast_type(value)
-    except (ValueError, TypeError):
-        return default
+    def get(self, key: str, default: Any = None, cast_type: type = str) -> Any:
+        """
+        環境変数を取得して型変換する
+
+        Args:
+            key (str): 環境変数のキー
+            default (Any): デフォルト値
+            cast_type (type): 変換する型
+
+        Returns:
+            Any: 型変換された値
+        """
+        value = os.getenv(key, default)
+
+        if value is None:
+            return default
+
+        try:
+            if cast_type is bool:
+                # boolの場合は特別処理
+                if isinstance(value, bool):
+                    return value
+                return value.lower() in ("true", "1", "yes")
+            elif cast_type is int:
+                return int(value)
+            elif cast_type is float:
+                return float(value)
+            elif cast_type is str:
+                return str(value)
+            else:
+                return cast_type(value)
+        except (ValueError, TypeError):
+            print(f"[Warning] {key}の型変換に失敗しました。デフォルト値を使用します。")
+            return default
 
 
-def get_env_list(key: str, default: Optional[list] = None, separator: str = ",") -> list:
-    """
-    カンマ区切りの環境変数をリストとして取得
-
-    Args:
-        key (str): 環境変数名
-        default (Optional[list]): デフォルト値
-        separator (str): 区切り文字
-
-    Returns:
-        list: 環境変数のリスト
-    """
-    value = os.getenv(key)
-
-    if value is None:
-        return default or []
-
-    return [item.strip() for item in value.split(separator) if item.strip()]
-
+env_loader = EnvLoader()
 
 # アプリケーション設定
-APP_NAME = get_env("APP_NAME", "PatchCoreBackend")
-APP_VERSION = get_env("APP_VERSION", "1.0.0")
-DEBUG = get_env("DEBUG", False, bool)
+APP_NAME = env_loader.get("APP_NAME", "PatchCoreBackend")
+APP_VERSION = env_loader.get("APP_VERSION", "1.0.0")
+DEBUG = env_loader.get("DEBUG", False, bool)
 
 # APIサーバー設定
-API_HOST = get_env("API_HOST", "0.0.0.0")
-API_PORT = get_env("API_PORT", 8000, int)
-API_RELOAD = get_env("API_RELOAD", False, bool)
-API_WORKERS = get_env("API_WORKERS", 1, int)
+API_HOST = env_loader.get("API_HOST", "0.0.0.0")
+API_PORT = env_loader.get("API_PORT", 8000, int)
+API_RELOAD = env_loader.get("API_RELOAD", False, bool)
+API_WORKERS = env_loader.get("API_WORKERS", 1, int)
 
 # モデル設定
-DEFAULT_MODEL_NAME = get_env("DEFAULT_MODEL_NAME", "example_model")
+DEFAULT_MODEL_NAME = env_loader.get("DEFAULT_MODEL_NAME", "example_model")
 
 # ログ設定
-LOG_LEVEL = get_env("LOG_LEVEL", "INFO")
-LOG_DIR = get_env("LOG_DIR", "logs")
+LOG_LEVEL = env_loader.get("LOG_LEVEL", "INFO")
+LOG_DIR = env_loader.get("LOG_DIR", "logs")
 
 # GPU設定
-USE_GPU = get_env("USE_GPU", False, bool)
-GPU_DEVICE_ID = get_env("GPU_DEVICE_ID", 0, int)
-USE_MIXED_PRECISION = get_env("USE_MIXED_PRECISION", True, bool)
+USE_GPU = env_loader.get("USE_GPU", False, bool)
+GPU_DEVICE_ID = env_loader.get("GPU_DEVICE_ID", 0, int)
+USE_MIXED_PRECISION = env_loader.get("USE_MIXED_PRECISION", True, bool)
 
 # CPU最適化設定
-CPU_THREADS = get_env("CPU_THREADS", 4, int)
-CPU_MEMORY_EFFICIENT = get_env("CPU_MEMORY_EFFICIENT", True, bool)
+CPU_THREADS = env_loader.get("CPU_THREADS", 4, int)
+CPU_MEMORY_EFFICIENT = env_loader.get("CPU_MEMORY_EFFICIENT", True, bool)
 
 # データ設定
-DATA_DIR = get_env("DATA_DIR", "datasets")
-MODEL_DIR = get_env("MODEL_DIR", "models")
-SETTINGS_DIR = get_env("SETTINGS_DIR", "settings")
+DATA_DIR = env_loader.get("DATA_DIR", "datasets")
+MODEL_DIR = env_loader.get("MODEL_DIR", "models")
+SETTINGS_DIR = env_loader.get("SETTINGS_DIR", "settings")
 
 # キャッシュ設定
-MAX_CACHE_IMAGES = get_env("MAX_CACHE_IMAGES", 1200, int)
-CACHE_TTL = get_env("CACHE_TTL", 3600, int)
+MAX_CACHE_IMAGES = env_loader.get("MAX_CACHE_IMAGES", 1200, int)
+CACHE_TTL = env_loader.get("CACHE_TTL", 3600, int)
 
 # NG画像保存設定
-NG_IMAGE_SAVE = get_env("NG_IMAGE_SAVE", True, bool)
+NG_IMAGE_SAVE = env_loader.get("NG_IMAGE_SAVE", True, bool)
 
 # セキュリティ設定
-API_KEY = get_env("API_KEY", "your-secret-api-key-here")
-ALLOWED_ORIGINS = get_env_list("ALLOWED_ORIGINS", ["http://localhost:3000", "http://localhost:8000"])
+API_KEY = env_loader.get("API_KEY", "your-secret-api-key-here")
+ALLOWED_ORIGINS = env_loader.get("ALLOWED_ORIGINS", ["http://localhost:3000", "http://localhost:8000"], list)
 
 
 def get_cpu_optimization() -> dict:
