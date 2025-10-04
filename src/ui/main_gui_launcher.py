@@ -1,10 +1,14 @@
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk, scrolledtext, messagebox
 import subprocess
 import threading
 import os
 import sys
 from datetime import datetime
+
+# パスを追加してsrcモジュールをインポート可能にする
+sys.path.insert(0, os.path.abspath("."))
+from src.config.settings_loader import SettingsLoader
 
 MAIN_SETTINGS_PATH = os.path.join("settings", "main_settings.py")
 
@@ -76,6 +80,16 @@ class ModelLauncherGUI:
         )
         self.edit_button.pack(pady=5)
 
+        self.validate_button = tk.Button(
+            self.root,
+            text="設定検証",
+            font=("Arial", 12),
+            width=20,
+            command=self._on_validate_settings_click,
+            bg="#e3f2fd",
+        )
+        self.validate_button.pack(pady=5)
+
         self.affine_button = tk.Button(
             self.root, text="アフィン座標取得", font=("Arial", 12), width=20, command=self._on_affine_point_click
         )
@@ -93,6 +107,7 @@ class ModelLauncherGUI:
 
         self.control_widgets = [
             self.edit_button,
+            self.validate_button,
             self.affine_button,
             self.train_button,
             self.inference_button,
@@ -141,19 +156,103 @@ class ModelLauncherGUI:
         settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
         os.system(f'"{settings_path}"')
 
+    def _on_validate_settings_click(self):
+        """設定ファイルを検証"""
+        settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
+        self._log_message(f"\n[設定検証開始] {settings_path}\n")
+        self._log_message("=" * 60 + "\n")
+
+        try:
+            loader = SettingsLoader(settings_path)
+            self._log_message("✓ 設定ファイルの読み込み成功\n\n")
+
+            # 基本設定の表示
+            self._log_message("基本設定:\n")
+            self._log_message(f"  IMAGE_SIZE: {loader.get_variable('IMAGE_SIZE')}\n")
+            self._log_message(f"  FEATURE_DEPTH: {loader.get_variable('FEATURE_DEPTH')}\n")
+            self._log_message(f"  SAVE_FORMAT: {loader.get_variable('SAVE_FORMAT')}\n")
+            self._log_message(f"  USE_GPU: {loader.get_variable('USE_GPU')}\n\n")
+
+            # しきい値の表示
+            self._log_message("しきい値設定:\n")
+            self._log_message(f"  Z_SCORE_THRESHOLD: {loader.get_variable('Z_SCORE_THRESHOLD')}\n")
+            self._log_message(f"  Z_AREA_THRESHOLD: {loader.get_variable('Z_AREA_THRESHOLD')}\n")
+            self._log_message(f"  Z_MAX_THRESHOLD: {loader.get_variable('Z_MAX_THRESHOLD')}\n\n")
+
+            # 詳細検証
+            is_valid, errors = loader.validate_model_settings()
+
+            self._log_message("=" * 60 + "\n")
+            if is_valid:
+                self._log_message("✓ 設定ファイルは正常です\n\n")
+                messagebox.showinfo("検証成功", "設定ファイルは正常です")
+            else:
+                self._log_message("✗ 設定ファイルにエラーがあります:\n")
+                for error in errors:
+                    self._log_message(f"  - {error}\n")
+                self._log_message("\n")
+                messagebox.showerror("検証失敗", f"設定ファイルにエラーがあります:\n\n" + "\n".join(errors))
+
+        except FileNotFoundError as e:
+            self._log_message(f"✗ エラー: {e}\n\n")
+            messagebox.showerror("エラー", str(e))
+        except Exception as e:
+            self._log_message(f"✗ 予期しないエラー: {e}\n\n")
+            import traceback
+
+            self._log_message(traceback.format_exc())
+            messagebox.showerror("エラー", f"予期しないエラー: {e}")
+
+    def _validate_settings_silent(self, settings_path: str) -> bool:
+        """設定を静かに検証（戻り値: 検証成功かどうか）"""
+        try:
+            loader = SettingsLoader(settings_path)
+            is_valid, errors = loader.validate_model_settings()
+
+            if not is_valid:
+                self._log_message("\n[警告] 設定ファイルに問題があります:\n")
+                for error in errors:
+                    self._log_message(f"  - {error}\n")
+                self._log_message("\n")
+
+            return is_valid
+        except Exception as e:
+            self._log_message(f"\n[警告] 設定検証エラー: {e}\n\n")
+            return False
+
     def _on_affine_point_click(self):
         script_path = os.path.join("src", "ui", "projection_point_selector.py")
         settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
         self._run_script_async(script_path, settings_path)
 
     def _on_train_button_click(self):
-        script_path = os.path.join("src", "model", "pipeline", "create.py")
         settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
+
+        # 学習実行前に設定を検証
+        if not self._validate_settings_silent(settings_path):
+            response = messagebox.askyesno(
+                "設定に問題があります", "設定ファイルに問題がありますが、学習を続行しますか？"
+            )
+            if not response:
+                self._log_message("[学習中止] ユーザーによりキャンセルされました\n\n")
+                return
+
+        script_path = os.path.join("src", "model", "pipeline", "create.py")
         self._run_script_async(script_path, settings_path)
 
     def _on_inference_button_click(self):
-        script_path = os.path.join("src", "model", "pipeline", "inference.py")
         settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
+
+        # 推論実行前に設定を検証
+        if not self._validate_settings_silent(settings_path):
+            response = messagebox.askyesno(
+                "設定に問題があります", "設定ファイルに問題がありますが、推論を続行しますか？"
+            )
+            if not response:
+                self._log_message("[推論中止] ユーザーによりキャンセルされました\n\n")
+                return
+
+        script_path = os.path.join("src", "model", "pipeline", "inference.py")
         self._run_script_async(script_path, settings_path)
 
     def _run_script_async(self, script_path, settings_path):
