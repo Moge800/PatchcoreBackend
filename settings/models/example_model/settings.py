@@ -12,6 +12,7 @@ TEST_DIR = "test_image"
 
 # データ拡張の有効化（Trueで拡張画像も使用）
 # 学習時にぼかし・シャープなどの加工を加えた画像も使用するかどうか。
+# モデル学習のコア設定のためsettings.pyで管理
 ENABLE_AUGMENT = True
 
 # -----NG判定設定-----
@@ -33,34 +34,31 @@ Z_MAX_THRESHOLD = 10.0
 # 学習・推論コストは深くなるほど重くなる（演算が増えるため）
 FEATURE_DEPTH = 1
 
-
-# -----以下は通常変更不要な設定-----
-
 # PCAによる次元削減で保持する分散割合（0.0〜1.0）
 # メモリバンクの次元を削減する際に、どれだけの情報を保持するかを指定。
 # 1.0に近いほど情報保持率が高くなるが、計算コストも増える。
+# 異常検出精度に直接関与するためsettings.pyで管理
 PCA_VARIANCE = 0.95
 
 # メモリバンクの保存形式（"compressed" または "raw"）
 # "compressed" はPCAで次元削減された軽量形式、"raw" は元の特徴量をそのまま保存。
 SAVE_FORMAT = "compressed"
 
-# -----inference_engine設定-----
+# -----実行環境設定（環境変数でオーバーライド可能）-----
+# これらの設定は .env ファイルで上書きできます
+# 以下はデフォルト値で、環境変数が設定されている場合はそちらが優先されます
+
+# GPU設定（.envのUSE_GPU, GPU_DEVICE_ID, USE_MIXED_PRECISIONでオーバーライド可能）
+USE_GPU = False
+GPU_DEVICE_ID = 0
+USE_MIXED_PRECISION = True
+
+# CPU最適化設定（.envのCPU_THREADS, CPU_MEMORY_EFFICIENTでオーバーライド可能）
+CPU_OPTIMIZATION = {
+    "threads": 4,
+    "memory_efficient": True,
+}
+
+# inference_engine設定（.envのNG_IMAGE_SAVE, MAX_CACHE_IMAGESでオーバーライド可能）
 NG_IMAGE_SAVE = True
 MAX_CACHE_IMAGE = 1200
-
-# -----GPU設定-----
-# GPUを使用するかどうか（TrueでGPU使用、FalseでCPU使用）
-USE_GPU = True  # GPU環境が整ったらTrueに変更
-
-# 使用するGPUデバイスID（複数GPU環境での指定）
-GPU_DEVICE_ID = 0
-
-# 混合精度演算の使用（GPU環境でのメモリ効率向上）
-USE_MIXED_PRECISION = True  # GPU環境でのみ有効
-
-# CPU環境での最適化設定
-CPU_OPTIMIZATION = {
-    "threads": 4,  # 利用可能なCPUコア数に応じて調整
-    "memory_efficient": True,  # メモリ効率重視モード
-}
