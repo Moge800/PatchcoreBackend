@@ -4,7 +4,7 @@ from datetime import datetime
 import cv2
 from sklearn.decomposition import PCA  # noqa: F401
 from src.config.settings_loader import SettingsLoader
-from settings import main_settings
+from src.config import env_loader
 import logging
 from src.model.utils.inference_utils import save_overlay_image
 from src.model.utils.model_loader import load_model_and_assets
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 def run_inference():
-    MODEL_NAME = main_settings.MODEL_NAME
+    MODEL_NAME = env_loader.DEFAULT_MODEL_NAME
     MODEL_DIR = os.path.join("models", MODEL_NAME)
     SETTINGS_DIR = os.path.join("settings", "models", MODEL_NAME)
     SETTINGS_PATH = os.path.join(SETTINGS_DIR, "settings.py")
