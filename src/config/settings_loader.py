@@ -1,15 +1,32 @@
+"""
+設定ファイルローダーモジュール
+
+モデル固有のsettings.pyファイルを動的に読み込み、環境変数でオーバーライド可能にします。
+"""
+
 import os
 import importlib.util
+from typing import Any, Tuple, List, Dict, Optional
 from src.config import env_loader
 
 
 class SettingsLoader:
-    def __init__(self, settings_path: str):
+    """
+    モデル固有のsettings.pyを動的に読み込むクラス
+
+    環境変数による設定のオーバーライドをサポートします。
+    """
+
+    def __init__(self, settings_path: str) -> None:
         """
-        Initialize the loader with the path to settings.py
+        SettingsLoaderを初期化し、settings.pyを読み込む
 
         Args:
-            settings_path (str): Full path to settings.py
+            settings_path: settings.pyファイルへのフルパス
+
+        Raises:
+            FileNotFoundError: settings.pyが存在しない場合
+            RuntimeError: settings.pyの読み込みに失敗した場合
         """
         self.settings_path = settings_path
         if not os.path.isfile(settings_path):
@@ -20,23 +37,30 @@ class SettingsLoader:
         except Exception as e:
             raise RuntimeError(f"settings.py の読み込みに失敗しました: {e}")
 
-    def get_variable(self, name: str):
+    def get_variable(self, name: str) -> Any:
         """
-        Retrieve a variable from the loaded settings module.
-        環境変数が設定されている場合は、settings.pyの値を環境変数でオーバーライド
+        settings.pyから変数を取得（環境変数でオーバーライド可能）
+
+        環境変数が設定されている場合は、settings.pyの値を上書きします。
 
         Args:
-            name (str): Variable name to retrieve
+            name: 取得する変数名
 
         Returns:
-            Any: Value of the variable
+            変数の値（環境変数でオーバーライドされる場合はその値）
 
         Raises:
-            AttributeError: If the variable is not defined in settings.py
+            AttributeError: 変数がsettings.pyに定義されていない場合
+
+        Example:
+            >>> loader = SettingsLoader("models/example_model/settings.py")
+            >>> image_size = loader.get_variable("IMAGE_SIZE")
+            >>> print(image_size)
+            (256, 256)
         """
         # 環境変数からのオーバーライドマッピング
         # settings.pyで定義されている設定のうち、環境変数で上書き可能なもの
-        env_override_map = {
+        env_override_map: Dict[str, Tuple[Optional[str], Optional[type]]] = {
             "USE_GPU": ("USE_GPU", bool),
             "GPU_DEVICE_ID": ("GPU_DEVICE_ID", int),
             "USE_MIXED_PRECISION": ("USE_MIXED_PRECISION", bool),
@@ -65,21 +89,36 @@ class SettingsLoader:
             raise AttributeError(f"{name} が {self.module.__name__} に定義されていません。")
         return getattr(self.module, name)
 
-    def reload(self):
-        """設定ファイルを再読み込み"""
+    def reload(self) -> None:
+        """
+        設定ファイルを再読み込み
+
+        settings.pyの内容が変更された場合に、変更を反映させるために使用します。
+        """
         spec = importlib.util.spec_from_file_location("settings", self.settings_path)
         self.module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.module)
 
-    def validate_model_settings(self) -> tuple[bool, list[str]]:
+    def validate_model_settings(self) -> Tuple[bool, List[str]]:
         """
         モデル設定の妥当性を検証
-        環境変数でオーバーライドされる設定は検証対象外
+
+        settings.pyの必須項目と値の範囲をチェックします。
+        環境変数でオーバーライドされる設定は検証対象外です。
 
         Returns:
-            tuple[bool, list[str]]: (検証成功, エラーメッセージリスト)
+            検証結果のタプル
+            - bool: 検証が成功した場合True、失敗した場合False
+            - List[str]: エラーメッセージのリスト（検証成功時は空）
+
+        Example:
+            >>> loader = SettingsLoader("models/example_model/settings.py")
+            >>> is_valid, errors = loader.validate_model_settings()
+            >>> if not is_valid:
+            ...     for error in errors:
+            ...         print(f"検証エラー: {error}")
         """
-        errors = []
+        errors: List[str] = []
 
         # 必須設定の確認（settings.py固有の設定のみ）
         required_vars = [

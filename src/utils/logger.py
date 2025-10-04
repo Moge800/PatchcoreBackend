@@ -1,30 +1,44 @@
 """
 ロギング設定モジュール
-プロジェクト全体で統一されたロギングを提供
+
+プロジェクト全体で統一されたロギングを提供します。
+環境変数から設定を読み込み、コンソールとファイル出力を管理します。
 """
 
 import logging
 import os
 from datetime import datetime
+from typing import Optional
 from src.config import env_loader
 
 
 def setup_logger(
-    name: str, log_dir: str = None, level: int = None, console: bool = True, file: bool = True
+    name: str,
+    log_dir: Optional[str] = None,
+    level: Optional[int] = None,
+    console: bool = True,
+    file: bool = True,
 ) -> logging.Logger:
     """
     標準化されたロガーを作成
-    環境変数からデフォルト値を読み込む
+
+    環境変数からデフォルト値を読み込み、コンソールとファイル出力を設定します。
+    既存のハンドラは自動的にクリアされます。
 
     Args:
-        name (str): ロガー名
-        log_dir (str): ログディレクトリ（省略時は環境変数から取得）
-        level (int): ログレベル（省略時は環境変数から取得）
-        console (bool): コンソール出力を有効化
-        file (bool): ファイル出力を有効化
+        name: ロガー名（通常はモジュール名 __name__ を使用）
+        log_dir: ログディレクトリのパス。Noneの場合は環境変数LOG_DIRから取得
+        level: ログレベル（logging.DEBUG, INFO, WARNING, ERROR, CRITICAL）
+               Noneの場合は環境変数LOG_LEVELから取得
+        console: Trueの場合、標準出力にログを出力
+        file: Trueの場合、ファイルにログを出力（ファイル名: {name}_YYYYMMDD.log）
 
     Returns:
-        logging.Logger: 設定済みロガー
+        設定済みのロガーインスタンス
+
+    Example:
+        >>> logger = setup_logger(__name__, level=logging.DEBUG)
+        >>> logger.info("アプリケーション起動")
     """
     # 環境変数からデフォルト値を取得
     if log_dir is None:
@@ -36,11 +50,11 @@ def setup_logger(
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    # 既存のハンドラをクリア
+    # 既存のハンドラをクリア（重複出力を防止）
     if logger.handlers:
         logger.handlers.clear()
 
-    # フォーマッター
+    # フォーマッター（タイムスタンプ - ロガー名 - レベル - メッセージ）
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
     # コンソールハンドラ
@@ -64,13 +78,20 @@ def setup_logger(
 
 def get_logger(name: str) -> logging.Logger:
     """
-    既存のロガーを取得、なければ作成
+    既存のロガーを取得、存在しない場合は新規作成
+
+    指定された名前のロガーが既に存在し、ハンドラが設定されている場合はそれを返します。
+    存在しない、またはハンドラが未設定の場合は setup_logger() を呼び出して新規作成します。
 
     Args:
-        name (str): ロガー名
+        name: ロガー名（通常はモジュール名 __name__ を使用）
 
     Returns:
-        logging.Logger: ロガーインスタンス
+        ロガーインスタンス（既存または新規作成）
+
+    Example:
+        >>> logger = get_logger(__name__)
+        >>> logger.warning("注意が必要です")
     """
     logger = logging.getLogger(name)
     if not logger.handlers:

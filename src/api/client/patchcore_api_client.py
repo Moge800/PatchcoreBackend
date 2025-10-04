@@ -1,11 +1,43 @@
+"""
+PatchCore API クライアントモジュール
+
+PatchCore APIサーバーとHTTP通信するためのクライアントクラスを提供します。
+画像のアップロード、推論実行、結果取得などの機能を持ちます。
+"""
+
 import requests
 import numpy as np
 import time
+from typing import Optional, Dict, Any
 from src.api.utils.api_util import convert_image_to_png_bytes, convert_png_bytes_to_ndarray, ApiUrlBuilder
 
 
 class PatchCoreApiClient:
-    def __init__(self, base_url: str = None, timeout: int = 5):
+    """
+    PatchCore API クライアント
+
+    APIサーバーとの通信を管理し、画像の異常検出、システム情報取得、
+    キャッシュ管理などの機能を提供します。
+
+    Attributes:
+        base_url: APIサーバーのベースURL
+        session: HTTPセッション（接続プーリング用）
+        timeout: リクエストのタイムアウト時間（秒）
+    """
+
+    def __init__(self, base_url: Optional[str] = None, timeout: int = 5) -> None:
+        """
+        APIクライアントを初期化
+
+        Args:
+            base_url: APIサーバーのベースURL。Noneの場合は環境変数から取得
+            timeout: リクエストのタイムアウト時間（秒）
+
+        Example:
+            >>> client = PatchCoreApiClient("http://localhost:8000")
+            >>> # または環境変数から自動取得
+            >>> client = PatchCoreApiClient()
+        """
         # base_urlが指定されていない場合は環境変数から取得
         if base_url is None:
             from src.config import env_loader
@@ -18,6 +50,23 @@ class PatchCoreApiClient:
         self.timeout = timeout
 
     def wait_for_server(self, endpoint: str = "/status", max_wait: int = 30) -> bool:
+        """
+        サーバーの起動を待機
+
+        指定されたエンドポイントに定期的にアクセスし、サーバーが起動するまで待ちます。
+
+        Args:
+            endpoint: 確認するエンドポイント（デフォルト: "/status"）
+            max_wait: 最大待機時間（秒）
+
+        Returns:
+            サーバーが起動した場合True、タイムアウトした場合False
+
+        Example:
+            >>> client = PatchCoreApiClient()
+            >>> if client.wait_for_server(max_wait=60):
+            ...     print("サーバーが起動しました")
+        """
         url = self.url_builder.make(endpoint)
         for _ in range(max_wait * 2):
             try:
@@ -28,17 +77,46 @@ class PatchCoreApiClient:
                 time.sleep(0.5)
         return False
 
-    def get(self, endpoint: str, **kwargs):
-        """汎用GETメソッド"""
+    def get(self, endpoint: str, **kwargs) -> requests.Response:
+        """
+        汎用GETリクエスト
+
+        Args:
+            endpoint: リクエストするエンドポイント
+            **kwargs: requests.get()に渡す追加パラメータ
+
+        Returns:
+            HTTPレスポンス
+        """
         url = self.url_builder.make(endpoint)
         return self.session.get(url, timeout=self.timeout, **kwargs)
 
-    def post(self, endpoint: str, **kwargs):
-        """汎用POSTメソッド"""
+    def post(self, endpoint: str, **kwargs) -> requests.Response:
+        """
+        汎用POSTリクエスト
+
+        Args:
+            endpoint: リクエストするエンドポイント
+            **kwargs: requests.post()に渡す追加パラメータ
+
+        Returns:
+            HTTPレスポンス
+        """
         url = self.url_builder.make(endpoint)
         return self.session.post(url, timeout=self.timeout, **kwargs)
 
-    def status(self):
+    def status(self) -> Optional[Dict[str, Any]]:
+        """
+        サーバーのステータスを取得
+
+        Returns:
+            ステータス情報の辞書。エラー時はNone
+
+        Example:
+            >>> client = PatchCoreApiClient()
+            >>> status = client.status()
+            >>> print(status["model_name"])
+        """
         url = self.url_builder.make("/status")
         try:
             response = self.session.get(url, timeout=self.timeout)
@@ -48,7 +126,15 @@ class PatchCoreApiClient:
             print(f"status: {e}")
             return None
 
-    def restart_engine(self):
+    def restart_engine(self) -> Optional[Dict[str, Any]]:
+        """
+        推論エンジンを再起動
+
+        設定ファイルの変更を反映させるために使用します。
+
+        Returns:
+            再起動結果の辞書。エラー時はNone
+        """
         url = self.url_builder.make("/restart_engine")
         try:
             response = self.session.post(url, params={"execute": True}, timeout=self.timeout)
@@ -58,7 +144,21 @@ class PatchCoreApiClient:
             print(f"restart_engine: {e}")
             return None
 
-    def get_image_list(self, limit=100, prefix=None, label=None, reverse_list=False):
+    def get_image_list(
+        self, limit: int = 100, prefix: Optional[str] = None, label: Optional[str] = None, reverse_list: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        """
+        キャッシュされた画像のIDリストを取得
+
+        Args:
+            limit: 取得する最大件数
+            prefix: フィルタ用プレフィックス（"org_" または "ovr_"）
+            label: フィルタ用ラベル（"OK" または "NG"）
+            reverse_list: Trueの場合、リストを逆順にする
+
+        Returns:
+            画像IDリストを含む辞書。エラー時はNone
+        """
         url = self.url_builder.make("/get_image_list")
         params = {"limit": limit, "reverse_list": reverse_list}
         if prefix:
@@ -74,7 +174,28 @@ class PatchCoreApiClient:
             print(f"get_image_list: {e}")
             return None
 
-    def predict(self, image: np.ndarray, detail_level: str = "basic", retries: int = 3, retry_delay: float = 0.5):
+    def predict(
+        self, image: np.ndarray, detail_level: str = "basic", retries: int = 3, retry_delay: float = 0.5
+    ) -> Optional[Dict[str, Any]]:
+        """
+        画像の異常検出推論を実行
+
+        Args:
+            image: 入力画像（NumPy配列、BGR形式）
+            detail_level: 詳細レベル（"basic" または "full"）
+            retries: 失敗時のリトライ回数
+            retry_delay: リトライ間の待機時間（秒）
+
+        Returns:
+            推論結果の辞書（label, z_stats, image_id など）。エラー時はNone
+
+        Example:
+            >>> import cv2
+            >>> client = PatchCoreApiClient()
+            >>> img = cv2.imread("test.jpg")
+            >>> result = client.predict(img, detail_level="full")
+            >>> print(result["label"])  # "OK" or "NG"
+        """
         url = self.url_builder.make("/predict")
         image_bytes = convert_image_to_png_bytes(image)
         files = {"file": ("image.png", image_bytes, "image/png")}
@@ -95,7 +216,21 @@ class PatchCoreApiClient:
         print("リトライ上限に達しました")
         return None
 
-    def get_image(self, image_id: str):
+    def get_image(self, image_id: str) -> Optional[np.ndarray]:
+        """
+        IDから画像を取得
+
+        Args:
+            image_id: 取得する画像のID（"org_" または "ovr_" で始まる）
+
+        Returns:
+            画像配列（NumPy配列、BGR形式）。エラー時はNone
+
+        Example:
+            >>> client = PatchCoreApiClient()
+            >>> img = client.get_image("org_NG_20250104120000_abc1")
+            >>> cv2.imshow("Image", img)
+        """
         url = self.url_builder.make("/get_image")
         try:
             response = self.session.get(url, params={"image_id": image_id}, timeout=self.timeout)
@@ -105,8 +240,13 @@ class PatchCoreApiClient:
             print(f"get_image: {e}")
             return None
 
-    def get_gpu_info(self) -> dict:
-        """GPU情報を取得"""
+    def get_gpu_info(self) -> Dict[str, Any]:
+        """
+        GPU情報を取得
+
+        Returns:
+            GPU情報を含む辞書（cuda_available, gpu_count, gpu_names など）
+        """
         try:
             response = self.get("/gpu_info")
             response.raise_for_status()
@@ -114,8 +254,13 @@ class PatchCoreApiClient:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_system_info(self) -> dict:
-        """システム情報を取得"""
+    def get_system_info(self) -> Dict[str, Any]:
+        """
+        システム情報を取得
+
+        Returns:
+            システム情報を含む辞書（python_version, platform, cpu_count など）
+        """
         try:
             response = self.get("/system_info")
             response.raise_for_status()
@@ -123,8 +268,16 @@ class PatchCoreApiClient:
         except Exception as e:
             return {"error": str(e)}
 
-    def clear_image_cache(self, execute: bool = False) -> dict:
-        """画像キャッシュをクリア"""
+    def clear_image_cache(self, execute: bool = False) -> Dict[str, Any]:
+        """
+        画像キャッシュをクリア
+
+        Args:
+            execute: Trueの場合、実際にクリアを実行。Falseの場合は確認のみ
+
+        Returns:
+            クリア結果を含む辞書
+        """
         try:
             response = self.post("/clear_image", params={"execute": execute})
             response.raise_for_status()

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Query
 from fastapi.responses import JSONResponse, Response
+from typing import Callable
 import numpy as np
 import cv2
 from PIL import Image
@@ -18,9 +19,19 @@ app = FastAPI(title=env_loader.APP_NAME, version=env_loader.APP_VERSION)
 logger = setup_logger("patchcore_api", log_dir=env_loader.LOG_DIR + "/api")
 
 
-def engine_required(func):
+def engine_required(func: Callable) -> Callable:
+    """
+    エンジンが初期化されているかチェックするデコレータ
+
+    Args:
+        func: デコレート対象の関数
+
+    Returns:
+        Callable: ラップされた関数
+    """
+
     @wraps(func)
-    async def async_wrapper(*args, **kwargs):
+    async def async_wrapper(*args, **kwargs) -> JSONResponse:
         if engine is None:
             return JSONResponse(status_code=503, content={"status": "error", "message": "Engine not initialized"})
         if inspect.iscoroutinefunction(func):
@@ -31,7 +42,13 @@ def engine_required(func):
     return async_wrapper
 
 
-def reload_engine():
+def reload_engine() -> None:
+    """
+    推論エンジンをリロードする
+
+    環境変数からモデル名を取得し、エンジンのシングルトンインスタンスを再作成する。
+    エラーが発生した場合は、エンジンをNoneに設定する。
+    """
     global engine
     try:
         # .envからモデル名を取得
@@ -49,8 +66,29 @@ reload_engine()
 
 @app.post("/predict")
 @engine_required
-async def predict(file: UploadFile = File(...), detail_level: DetailLevel = Query("basic", enum=["basic", "full"])):
+async def predict(
+    file: UploadFile = File(...), detail_level: DetailLevel = Query("basic", enum=["basic", "full"])
+) -> JSONResponse:
+    """
+    画像の異常検出を実行する
 
+    Args:
+        file: アップロードされた画像ファイル（PNG, JPEG等）
+        detail_level: 応答の詳細レベル
+            - "basic": 基本情報のみ（label, process_time, 最小限のz_stats）
+            - "full": 全情報（thresholds, 完全なz_stats含む）
+
+    Returns:
+        JSONResponse: 予測結果
+            - label (str): "OK" または "NG"
+            - process_time (float): 処理時間（秒）
+            - image_id (str): 画像ID
+            - thresholds (dict): しきい値情報
+            - z_stats (dict): Z-score統計情報
+
+    Raises:
+        500: 予測処理中にエラーが発生した場合
+    """
     try:
         start = time.perf_counter()
 
@@ -85,8 +123,19 @@ async def predict(file: UploadFile = File(...), detail_level: DetailLevel = Quer
 
 @app.get("/get_image")
 @engine_required
-async def get_image(image_id: str):
+async def get_image(image_id: str) -> Response:
+    """
+    保存された画像をIDで取得する
 
+    Args:
+        image_id: 画像ID（例: "org_20250104_120000_OK"）
+
+    Returns:
+        Response: PNG形式の画像データ
+
+    Raises:
+        404: 指定されたIDの画像が見つからない場合
+    """
     image = engine.get_image_by_id(image_id)
     if image is None:
         logger.warning(f"Image not found: {image_id}")
@@ -103,8 +152,26 @@ async def get_image_list(
     prefix: str = Query(None, enum=["org", "ovr"]),
     label: str = Query(None, enum=["OK", "NG"]),
     reverse_list: bool = Query(False),
-):
+) -> JSONResponse:
+    """
+    保存された画像のIDリストを取得する
 
+    Args:
+        limit: 取得する最大件数（1-1000、デフォルト: 100）
+        prefix: フィルタするプレフィックス
+            - "org": オリジナル画像のみ
+            - "ovr": オーバーレイ画像のみ
+            - None: すべて
+        label: フィルタするラベル
+            - "OK": OK画像のみ
+            - "NG": NG画像のみ
+            - None: すべて
+        reverse_list: True の場合、リストを逆順にする
+
+    Returns:
+        JSONResponse: 画像IDのリスト
+            - image_list (List[str]): 画像IDの配列
+    """
     image_list = engine.get_store_image_list()
     if prefix:
         image_list = [img_id for img_id in image_list if img_id.startswith(prefix)]
@@ -117,7 +184,17 @@ async def get_image_list(
 
 @app.post("/clear_image")
 @engine_required
-async def clear_image(execute: bool = Query(False)):
+async def clear_image(execute: bool = Query(False)) -> JSONResponse:
+    """
+    画像キャッシュをクリアする
+
+    Args:
+        execute: True の場合のみ実行（安全装置）
+
+    Returns:
+        JSONResponse: 実行結果
+            - status (str): "cleared" または "skipped"
+    """
 
     if execute:
         engine.clear_store_image()
@@ -128,15 +205,36 @@ async def clear_image(execute: bool = Query(False)):
 
 @app.get("/status")
 @engine_required
-async def status():
+async def status() -> JSONResponse:
+    """
+    APIサーバーとエンジンのステータスを取得する
 
+    Returns:
+        JSONResponse: ステータス情報
+            - status (str): "ok"
+            - model (str): 現在のモデル名
+            - image_cache (int): キャッシュされている画像の数
+    """
     return JSONResponse(
         content={"status": "ok", "model": engine.get_model_name(), "image_cache": len(engine.get_store_image_list())}
     )
 
 
 @app.post("/restart_engine")
-async def restart_engine(execute: bool = Query(False)):
+async def restart_engine(execute: bool = Query(False)) -> JSONResponse:
+    """
+    推論エンジンを再起動する
+
+    モデルやメモリバンクを再読み込みする。設定変更後に使用する。
+
+    Args:
+        execute: True の場合のみ実行（安全装置）
+
+    Returns:
+        JSONResponse: 実行結果
+            - status (str): "reloaded" または "skipped"
+            - model (str): 再読み込み後のモデル名（reloadedの場合）
+    """
     if execute:
         reload_engine()
         logger.info("Engine reloaded complete")
@@ -146,8 +244,22 @@ async def restart_engine(execute: bool = Query(False)):
 
 @app.get("/gpu_info")
 @engine_required
-async def gpu_info():
-    """GPU情報を取得"""
+async def gpu_info() -> JSONResponse:
+    """
+    GPU情報を取得する
+
+    CUDA対応GPU、メモリ使用状況、デバイスプロパティなどの情報を返す。
+
+    Returns:
+        JSONResponse: GPU情報
+            - cuda_available (bool): CUDA が利用可能か
+            - cuda_version (str): CUDA バージョン
+            - device_count (int): GPU デバイス数
+            - current_device (str): 現在使用中のデバイス
+            - mixed_precision (bool): 混合精度演算の有効/無効
+            - memory (dict): メモリ使用状況
+            - gpu_X_properties (dict): 各GPUのプロパティ（X=0,1,...）
+    """
     # 基本情報
     info = check_gpu_environment()
 
@@ -175,8 +287,24 @@ async def gpu_info():
 
 
 @app.get("/system_info")
-async def system_info():
-    """システム情報を取得（GPU要件なし）"""
+async def system_info() -> JSONResponse:
+    """
+    システム情報を取得する（GPU要件なし）
+
+    OS、CPU、メモリ、PyTorchバージョンなどのシステム情報を返す。
+
+    Returns:
+        JSONResponse: システム情報
+            - platform (str): OS情報
+            - cpu_count (int): CPU コア数
+            - memory_total (str): 総メモリ容量
+            - memory_available (str): 利用可能メモリ
+            - pytorch_version (str): PyTorch バージョン
+            - cuda_support (bool): CUDA サポートの有無
+
+    Raises:
+        500: システム情報の取得に失敗した場合
+    """
     try:
         import platform
         import psutil
