@@ -8,13 +8,12 @@ from sklearn.decomposition import PCA
 from torchvision.models import resnet18, ResNet18_Weights
 from PIL import Image, ImageFilter, ImageEnhance
 from src.config.settings_loader import SettingsLoader
-from settings import main_settings
+from src.config import env_loader
 from src.model.utils.inference_utils import preprocess_cv2, load_image_unicode_path
 from src.model.utils.device_utils import get_device, clear_gpu_cache
-import logging
+from src.utils.logger import setup_logger
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+logger = setup_logger("model_creator", log_dir="logs/model")
 
 
 class FeatureExtractor(nn.Module):
@@ -42,7 +41,7 @@ class FeatureExtractor(nn.Module):
 
 
 def run_creator():
-    MODEL_NAME = main_settings.MODEL_NAME
+    MODEL_NAME = env_loader.DEFAULT_MODEL_NAME
     DATASET_DIR = os.path.join("datasets", MODEL_NAME)
     NORMAL_DIR = os.path.join(DATASET_DIR, "normal")
     AUGMENTED_DIR = os.path.join(DATASET_DIR, "normal_augmented")
@@ -81,7 +80,7 @@ def run_creator():
                 sharp_img = ImageEnhance.Sharpness(image).enhance(1.2)
                 sharp_img.save(os.path.join(AUGMENTED_DIR, f"aug_s_{fname}"))
                 i += 1
-        logging.info(f"data augments make data={i}")
+        logger.info(f"Data augmentation completed: {i} images created")
 
     image_paths = []
     for subdir in [NORMAL_DIR, AUGMENTED_DIR] if ENABLE_AUGMENT else [NORMAL_DIR]:
@@ -113,7 +112,7 @@ def run_creator():
             memory_bank.append(patches.cpu().numpy())  # CPUに戻してからnumpy変換
 
             if idx % 10 == 0:
-                logging.info(f"学習実行中... {idx+1}/{len(image_paths)}")
+                logger.info(f"Training in progress... {idx+1}/{len(image_paths)}")
 
     memory_bank = np.concatenate(memory_bank, axis=0)
     pca = PCA(n_components=PCA_VARIANCE)
@@ -134,7 +133,7 @@ def run_creator():
     example_input = torch.randn(1, 3, *IMAGE_SIZE)  # CPUテンソル
     scripted_model = torch.jit.trace(model_cpu, example_input)
     scripted_model.save(os.path.join(MODEL_DIR, "model.pt"))
-    logging.info(f"\nモデルとメモリバンク（{SAVE_FORMAT}）を {MODEL_DIR} に保存しました。")
+    logger.info(f"Model and memory bank ({SAVE_FORMAT}) saved to {MODEL_DIR}")
 
     # Zスコアマップ作成のためにモデルを再度GPUに移動
     model = model.to(device)
@@ -159,7 +158,7 @@ def run_creator():
             raw_score_map = cv2.resize(score_map, IMAGE_SIZE, interpolation=cv2.INTER_CUBIC)
             score_maps.append(raw_score_map)
             if idx % 10 == 0:
-                logging.info(f"Z-scoreマップ作成中... {idx+1}/{len(image_paths)}")
+                logger.info(f"Creating Z-score map... {idx+1}/{len(image_paths)}")
 
     score_maps = np.stack(score_maps)
     pixel_mean = np.mean(score_maps, axis=0)
@@ -168,7 +167,7 @@ def run_creator():
     with open(os.path.join(MODEL_DIR, "pixel_stats.pkl"), "wb") as f:
         pickle.dump((pixel_mean, pixel_std), f)
 
-    logging.info("\nピクセル単位のZスコア統計を保存しました: pixel_stats.pkl")
+    logger.info("Pixel-wise Z-score statistics saved: pixel_stats.pkl")
 
     # GPU キャッシュクリア
     clear_gpu_cache()
