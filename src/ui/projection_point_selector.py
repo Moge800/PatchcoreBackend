@@ -42,9 +42,15 @@ class ProjectionPointSelector:
                 initialdir=".",
                 filetypes=[("画像ファイル", "*.png *.jpg *.jpeg *.bmp"), ("すべてのファイル", "*.*")],
             )
+
+            # キャンセルされた場合は空文字列が返される
+            if not path:
+                print("画像選択がキャンセルされました")
+                return []
+
             self.image = cv2.imread(path)
             if self.image is None:
-                print("画像が読み込めません")
+                print(f"画像が読み込めません: {path}")
                 return []
 
         print("左クリックでポイント追加, 右クリックでポイント削除")
