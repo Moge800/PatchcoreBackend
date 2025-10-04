@@ -13,7 +13,6 @@ import cv2
 import numpy as np
 from src.api.client.patchcore_api_client import PatchCoreApiClient
 from src.model.utils.inference_utils import load_image_unicode_path
-from src.config.settings_loader import SettingsLoader
 
 
 def main():
@@ -31,8 +30,9 @@ def main():
     except Exception:
         print("システム情報の取得に失敗")
 
-    settings = SettingsLoader("settings/main_settings.py")
-    MODEL_NAME = settings.get_variable("MODEL_NAME")
+    from src.config import env_loader
+
+    MODEL_NAME = env_loader.DEFAULT_MODEL_NAME
     try:
         img_list_path = f"settings/models/{MODEL_NAME}/test_image/*.png"
         img_list = glob.glob(img_list_path)
