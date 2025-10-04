@@ -13,7 +13,6 @@ import glob
 import numpy as np
 from src.api.client.patchcore_api_client import PatchCoreApiClient
 from src.model.utils.inference_utils import load_image_unicode_path
-from src.config.settings_loader import SettingsLoader
 
 
 def run_benchmark():
@@ -61,8 +60,9 @@ def run_benchmark():
 
     # テスト画像の準備
     try:
-        settings = SettingsLoader("settings/main_settings.py")
-        MODEL_NAME = settings.get_variable("MODEL_NAME")
+        from src.config import env_loader
+
+        MODEL_NAME = env_loader.DEFAULT_MODEL_NAME
         img_list_path = f"settings/models/{MODEL_NAME}/test_image/*.png"
         img_list = glob.glob(img_list_path)
     except Exception as e:
@@ -74,7 +74,7 @@ def run_benchmark():
         return
 
     # ベンチマーク実行
-    print(f"=== ベンチマーク開始 ===")
+    print("=== ベンチマーク開始 ===")
     print(f"テスト画像数: {len(img_list)}枚")
 
     times = []
@@ -110,7 +110,7 @@ def run_benchmark():
         print("\n\n処理可能な画像がありませんでした")
         return
 
-    print(f"\n\n=== ベンチマーク結果 ===")
+    print("\n\n=== ベンチマーク結果 ===")
     print(f"総処理数: {len(times)}枚（エラー: {errors}枚）")
     print(f"総処理時間: {sum(times):.3f}秒")
     print(f"平均処理時間: {statistics.mean(times):.3f}秒")
@@ -128,7 +128,7 @@ def run_benchmark():
         p95 = sorted_times[max(0, p95_idx)]
         p99 = sorted_times[max(0, p99_idx)]
 
-        print(f"\n=== パフォーマンス分析 ===")
+        print("\n=== パフォーマンス分析 ===")
         print(f"95%ile: {p95:.3f}秒")
         print(f"99%ile: {p99:.3f}秒")
         print(f"中央値: {statistics.median(times):.3f}秒")
@@ -145,7 +145,7 @@ def run_benchmark():
             if gpu_info.get("cuda_available", False):
                 memory_info = gpu_info.get("memory", {})
                 print(f"\nGPU メモリ: {memory_info}")
-    except:
+    except Exception:
         pass
 
 
