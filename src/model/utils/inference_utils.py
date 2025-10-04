@@ -3,6 +3,10 @@ import torch
 import numpy as np
 import cv2
 from PIL import Image
+from src.utils.logger import get_logger
+from src.types import ImageArray
+
+logger = get_logger(__name__)
 
 
 def load_image_unicode_path(path: str) -> np.ndarray:
@@ -66,6 +70,6 @@ def save_overlay_image(overlay, save_dir: str, index: int, label: str, image_pat
     try:
         success = cv2.imwrite(save_path, overlay)
         if not success:
-            print(f"保存失敗: {save_path}")
+            logger.error(f"Failed to save image: {save_path}")
     except Exception as e:
-        print(f"保存エラー: {e}")
+        logger.error(f"Image save error: {e}", exc_info=True)
