@@ -6,12 +6,34 @@ from PIL import Image
 
 
 def load_image_unicode_path(path: str) -> np.ndarray:
+    """
+    Unicode パスに対応した画像読み込み
+
+    Args:
+        path (str): 画像ファイルパス
+
+    Returns:
+        np.ndarray: BGR形式の画像配列
+
+    Raises:
+        FileNotFoundError: ファイルが存在しない場合
+        ValueError: 画像の読み込みに失敗した場合
+    """
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"画像ファイルが見つかりません: {path}")
+
     try:
         pil_img = Image.open(path).convert("RGB")
-        return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+        img_array = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+
+        if img_array is None or img_array.size == 0:
+            raise ValueError(f"画像の読み込みに失敗しました: {path}")
+
+        return img_array
+    except FileNotFoundError:
+        raise
     except Exception as e:
-        print(f"画像読み込みエラー: {e}")
-        return None
+        raise ValueError(f"画像読み込みエラー ({path}): {str(e)}")
 
 
 def preprocess_cv2(image: np.ndarray, quad_pts: list[list[float]], output_size: tuple[int, int]) -> torch.Tensor:
