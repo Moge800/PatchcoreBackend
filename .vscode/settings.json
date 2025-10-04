@@ -1,5 +1,24 @@
 {
     "cSpell.words": [
         "fmap"
-    ]
+    ],
+    // Markdown lint設定
+    "markdownlint.config": {
+        "default": true,
+        "MD013": false,  // 行の長さ制限を無効化
+        "MD033": false,  // HTML要素の使用を許可
+        "MD041": false,  // ファイル先頭のH1チェックを無効化
+        "MD024": false,  // 重複する見出しを許可
+        "MD026": false,  // 見出し末尾の句読点を許可
+        "MD034": false   // URL bare linkを許可
+    },
+    // Markdown検証を軽減
+    "[markdown]": {
+        "editor.wordWrap": "on",
+        "editor.quickSuggestions": {
+            "comments": "off",
+            "strings": "off",
+            "other": "off"
+        }
+    }
 }
