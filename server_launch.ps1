@@ -1,8 +1,9 @@
+# utf-8 do not use BOM
+
 $env:PYTHONPATH = (Resolve-Path ".").Path
 $python = ".\.venv\Scripts\python.exe"
 $module = "src.api.core.patchcore_api:app"
 
-# .envから環境変数を読み込み
 if (Test-Path ".env") {
     Get-Content ".env" | ForEach-Object {
         if ($_ -match '^\s*([^#][^=]*)=(.*)$') {
@@ -13,20 +14,20 @@ if (Test-Path ".env") {
     }
 }
 
-# APIサーバー設定を取得（新しい変数名を優先、なければ旧変数名）
-$apiHost = if ($env:API_SERVER_HOST) { $env:API_SERVER_HOST } elseif ($env:API_HOST) { $env:API_HOST } else { "0.0.0.0" }
-$apiPort = if ($env:API_SERVER_PORT) { $env:API_SERVER_PORT } elseif ($env:API_PORT) { $env:API_PORT } else { "8000" }
+$apiHost = $env:API_SERVER_HOST
+$apiPort = $env:API_SERVER_PORT
+
+$clientHost = $env:API_CLIENT_HOST
+$clientPort = $env:API_CLIENT_PORT
 
 Write-Host "Starting API Server on ${apiHost}:${apiPort}..."
 
-# サーバー起動（uvicorn CLI）
 $process = Start-Process -FilePath $python -ArgumentList "-m uvicorn $module --host $apiHost --port $apiPort --workers 1" -NoNewWindow -PassThru
 
-# サーバー起動確認（最大10秒待機）
 $maxWait = 20
 for ($i = 0; $i -lt $maxWait; $i++) {
     try {
-        $response = Invoke-RestMethod -Uri "http://localhost:${apiPort}/status" -TimeoutSec 2
+        $response = Invoke-RestMethod -Uri "http://${clientHost}:${clientPort}/status" -TimeoutSec 2
         if ($response.status -eq "ok") {
             break
         }
@@ -34,6 +35,3 @@ for ($i = 0; $i -lt $maxWait; $i++) {
         Start-Sleep -Milliseconds 500
     }
 }
-
-# GUI起動
-# & $python -c "from src.ui.main_gui_launcher import launch_gui; launch_gui()"
