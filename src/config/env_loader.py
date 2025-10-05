@@ -14,8 +14,40 @@ from dotenv import load_dotenv
 _project_root = Path(__file__).parent.parent.parent
 _env_path = _project_root / ".env"
 
-# .envファイルが存在する場合のみ読み込む
-if _env_path.exists():
+
+def env_exists() -> bool:
+    """
+    .envファイルが存在するか確認
+
+    Returns:
+        .envファイルが存在する場合はTrue、存在しない場合はFalse
+    """
+    return _env_path.exists()
+
+
+def make_env_file() -> None:
+    """
+    デフォルトの.envファイルを作成
+
+    既に.envファイルが存在する場合は上書きしません。
+    """
+    if env_exists():
+        print(f"[Info] {_env_path} は既に存在します。上書きしません。")
+        return
+
+    if os.path.exists(_env_path + ".example"):
+        with open(_env_path + ".example", "r", encoding="utf-8") as src, open(_env_path, "w", encoding="utf-8") as dst:
+            dst.write(src.read())
+        print(f"[Info] {_env_path} を {_env_path+'.example'} から作成しました。")
+    else:
+        print(f"[Error] {_env_path+'.example'} が見つかりません。デフォルトの.envファイルを作成できません。")
+
+
+# .envファイルがなければ作成し、読み込む
+if not env_exists():
+    make_env_file()
+    load_dotenv(_env_path)
+else:
     load_dotenv(_env_path)
 
 T = TypeVar("T")
