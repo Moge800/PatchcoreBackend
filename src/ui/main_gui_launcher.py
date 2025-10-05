@@ -53,7 +53,9 @@ class ModelLauncherGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("PatchCoreモデル操作GUI")
-        self.root.resizable(False, False)
+        self.root.geometry("800x700")  # 初期サイズを設定
+        self.root.minsize(700, 600)  # 最小サイズを設定
+        self.root.resizable(True, True)  # リサイズ可能にする
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.model_base_dir = os.path.join("settings", "models")
@@ -68,68 +70,160 @@ class ModelLauncherGUI:
         self._update_button_states()
 
     def _setup_widgets(self):
-        self.model_label = tk.Label(self.root, text=f"現在モデル名: {self.selected_model.get()}", font=("Arial", 14))
-        self.model_label.pack(pady=10)
+        # ヘッダー部分
+        header_frame = ttk.Frame(self.root)
+        header_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        dropdown_frame = tk.Frame(self.root)
+        self.model_label = tk.Label(
+            header_frame, text=f"現在モデル名: {self.selected_model.get()}", font=("Arial", 14, "bold")
+        )
+        self.model_label.pack(pady=(0, 10))
+
+        dropdown_frame = ttk.Frame(header_frame)
         dropdown_frame.pack(pady=5)
 
+        tk.Label(dropdown_frame, text="モデル選択:", font=("Arial", 10)).pack(side=tk.LEFT, padx=(0, 10))
+
         self.model_dropdown = ttk.Combobox(
-            dropdown_frame, textvariable=self.selected_model, values=self.model_dirs, state="readonly", width=30
+            dropdown_frame, textvariable=self.selected_model, values=self.model_dirs, state="readonly", width=25
         )
         self.model_dropdown.pack(side=tk.LEFT)
         self.model_dropdown.bind("<<ComboboxSelected>>", self._on_model_select)
 
-        self.confirm_button = tk.Button(dropdown_frame, text="確定", command=self._on_confirm_model)
-        self.confirm_button.pack(side=tk.LEFT, padx=5)
+        self.confirm_button = tk.Button(
+            dropdown_frame,
+            text="確定",
+            command=self._on_confirm_model,
+            font=("Arial", 10),
+            bg="#d4edda",
+            relief=tk.RAISED,
+        )
+        self.confirm_button.pack(side=tk.LEFT, padx=(10, 0))
 
-        self.log_text = scrolledtext.ScrolledText(self.root, width=80, height=20, font=("Consolas", 10))
-        self.log_text.pack(pady=10)
+        # ログエリア
+        log_frame = ttk.LabelFrame(self.root, text="ログ", padding=(5, 5))
+        log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+
+        self.log_text = scrolledtext.ScrolledText(log_frame, width=80, height=12, font=("Consolas", 9))
+        self.log_text.pack(fill=tk.BOTH, expand=True)
+
+        # ボタンエリアのメインフレーム
+        button_main_frame = ttk.Frame(self.root)
+        button_main_frame.pack(fill=tk.X, padx=10, pady=10)
+
+        # 設定関連ボタンパネル
+        settings_frame = ttk.LabelFrame(button_main_frame, text="設定編集", padding=(10, 5))
+        settings_frame.pack(fill=tk.X, pady=(0, 10))
+
+        # 設定ボタンを2列レイアウト
+        settings_left_frame = ttk.Frame(settings_frame)
+        settings_left_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        settings_right_frame = ttk.Frame(settings_frame)
+        settings_right_frame.pack(side=tk.RIGHT, fill=tk.X, expand=True)
 
         self.edit_button = tk.Button(
-            self.root, text="settings編集", font=("Arial", 12), width=20, command=self._on_edit_settings_click
+            settings_left_frame,
+            text="⚙️ 設定編集 (GUI)",
+            font=("Arial", 11),
+            width=20,
+            command=self._on_edit_settings_click,
+            bg="#e8f5e8",
+            relief=tk.RAISED,
         )
-        self.edit_button.pack(pady=5)
+        self.edit_button.pack(pady=2, padx=5, fill=tk.X)
+
+        self.edit_file_button = tk.Button(
+            settings_left_frame,
+            text="📝 設定編集 (ファイル)",
+            font=("Arial", 11),
+            width=20,
+            command=self._on_edit_settings_file_click,
+            relief=tk.RAISED,
+        )
+        self.edit_file_button.pack(pady=2, padx=5, fill=tk.X)
 
         self.validate_button = tk.Button(
-            self.root,
-            text="設定検証",
-            font=("Arial", 12),
+            settings_left_frame,
+            text="✅ 設定検証",
+            font=("Arial", 11),
             width=20,
             command=self._on_validate_settings_click,
             bg="#e3f2fd",
+            relief=tk.RAISED,
         )
-        self.validate_button.pack(pady=5)
+        self.validate_button.pack(pady=2, padx=5, fill=tk.X)
 
         self.env_button = tk.Button(
-            self.root,
-            text=".env編集",
-            font=("Arial", 12),
+            settings_right_frame,
+            text="🌐 .env編集 (GUI)",
+            font=("Arial", 11),
             width=20,
             command=self._on_edit_env_click,
             bg="#fff3e0",
+            relief=tk.RAISED,
         )
-        self.env_button.pack(pady=5)
+        self.env_button.pack(pady=2, padx=5, fill=tk.X)
+
+        self.env_file_button = tk.Button(
+            settings_right_frame,
+            text="📄 .env編集 (ファイル)",
+            font=("Arial", 11),
+            width=20,
+            command=self._on_edit_env_file_click,
+            bg="#fff8e1",
+            relief=tk.RAISED,
+        )
+        self.env_file_button.pack(pady=2, padx=5, fill=tk.X)
 
         self.affine_button = tk.Button(
-            self.root, text="アフィン座標取得", font=("Arial", 12), width=20, command=self._on_affine_point_click
+            settings_right_frame,
+            text="📐 アフィン座標取得",
+            font=("Arial", 11),
+            width=20,
+            command=self._on_affine_point_click,
+            relief=tk.RAISED,
         )
-        self.affine_button.pack(pady=5)
+        self.affine_button.pack(pady=2, padx=5, fill=tk.X)
+
+        # 実行関連ボタンパネル
+        execution_frame = ttk.LabelFrame(button_main_frame, text="学習・推論実行", padding=(10, 5))
+        execution_frame.pack(fill=tk.X, pady=(0, 5))
+
+        # 実行ボタンを横並びレイアウト
+        execution_button_frame = ttk.Frame(execution_frame)
+        execution_button_frame.pack()
 
         self.train_button = tk.Button(
-            self.root, text="学習実行", font=("Arial", 12), width=20, command=self._on_train_button_click
+            execution_button_frame,
+            text="🎯 学習実行",
+            font=("Arial", 12, "bold"),
+            width=15,
+            command=self._on_train_button_click,
+            bg="#ffebee",
+            fg="#c62828",
+            relief=tk.RAISED,
         )
-        self.train_button.pack(pady=5)
+        self.train_button.pack(side=tk.LEFT, pady=5, padx=10)
 
         self.inference_button = tk.Button(
-            self.root, text="テスト推論実行", font=("Arial", 12), width=20, command=self._on_inference_button_click
+            execution_button_frame,
+            text="🔍 テスト推論実行",
+            font=("Arial", 12, "bold"),
+            width=15,
+            command=self._on_inference_button_click,
+            bg="#e8f5e0",
+            fg="#2e7d32",
+            relief=tk.RAISED,
         )
-        self.inference_button.pack(pady=5)
+        self.inference_button.pack(side=tk.LEFT, pady=5, padx=10)
 
         self.control_widgets = [
             self.edit_button,
+            self.edit_file_button,
             self.validate_button,
             self.env_button,
+            self.env_file_button,
             self.affine_button,
             self.train_button,
             self.inference_button,
@@ -181,11 +275,45 @@ class ModelLauncherGUI:
         self.root.after(0, update)
 
     def _on_edit_settings_click(self):
+        """詳細設定編集GUIを開く"""
+        try:
+            from src.ui.settings_gui_editor import open_settings_editor
+
+            open_settings_editor(self.selected_model.get())
+            self._log_message(f"[設定編集] {self.selected_model.get()} の詳細設定を開きました\n")
+        except Exception as e:
+            self._log_message(f"[エラー] 設定編集GUI起動失敗: {e}\n")
+            import traceback
+
+            self._log_message(traceback.format_exc() + "\n")
+            messagebox.showerror("エラー", f"設定編集GUIの起動に失敗しました:\n{e}")
+
+    def _on_edit_settings_file_click(self):
+        """設定ファイルを直接エディタで開く（旧機能）"""
         settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
-        os.system(f'"{settings_path}"')
+        try:
+            os.system(f'"{settings_path}"')
+            self._log_message(f"[ファイル編集] {settings_path} を開きました\n")
+        except Exception as e:
+            self._log_message(f"[エラー] ファイル編集失敗: {e}\n")
+            messagebox.showerror("エラー", f"設定ファイルの編集に失敗しました:\n{e}")
 
     def _on_edit_env_click(self):
-        """環境変数ファイル(.env)を編集"""
+        """環境変数編集GUIを開く"""
+        try:
+            from src.ui.env_gui_editor import open_env_editor
+
+            open_env_editor()
+            self._log_message("[環境変数編集] 環境変数編集GUIを開きました\n")
+        except Exception as e:
+            self._log_message(f"[エラー] 環境変数編集GUI起動失敗: {e}\n")
+            import traceback
+
+            self._log_message(traceback.format_exc() + "\n")
+            messagebox.showerror("エラー", f"環境変数編集GUIの起動に失敗しました:\n{e}")
+
+    def _on_edit_env_file_click(self):
+        """環境変数ファイル(.env)を直接エディタで開く（旧機能）"""
         env_path = ".env"
         if not os.path.exists(env_path):
             # .envファイルが存在しない場合は.env.exampleからコピー
