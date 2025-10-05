@@ -49,7 +49,7 @@ SAVE_FORMAT = "compressed"
 # 以下はデフォルト値で、環境変数が設定されている場合はそちらが優先されます
 
 # GPU設定（.envのUSE_GPU, GPU_DEVICE_ID, USE_MIXED_PRECISIONでオーバーライド可能）
-USE_GPU = False
+USE_GPU = True
 GPU_DEVICE_ID = 0
 USE_MIXED_PRECISION = True
 
