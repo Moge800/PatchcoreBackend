@@ -1,0 +1,1 @@
+$response = Invoke-RestMethod -Uri "http://localhost:8000/restart_engine?execute=true" -Method Post
