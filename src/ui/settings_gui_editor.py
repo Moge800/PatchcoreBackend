@@ -12,7 +12,7 @@ from src.config.settings_loader import SettingsLoader
 class SettingsGUIEditor:
     """設定ファイル用のGUIエディタ"""
 
-    def __init__(self, root, model_name: str):
+    def __init__(self, root: tk.Toplevel, model_name: str):
         self.root = root
         self.model_name = model_name
         self.settings_path = os.path.join("settings", "models", model_name, "settings.py")
@@ -22,7 +22,8 @@ class SettingsGUIEditor:
 
         # ウィンドウ設定
         self.root.title(f"設定編集 - {model_name}")
-        self.root.resizable(True, True)
+        self.root.geometry("500x800")
+        self.root.resizable(False, True)
 
         # 設定項目の定義
         self._define_setting_configs()
