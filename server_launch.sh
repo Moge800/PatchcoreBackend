@@ -23,7 +23,7 @@ SERVER_PID=$!
 
 # /status エンドポイントで起動確認（最大10秒）
 for i in {1..20}; do
-    STATUS=$(curl -s http://localhost:${API_PORT}/status | grep -o '"status":"ok"')
+    STATUS=$(curl -s http://127.0.0.1:${API_PORT}/status | grep -o '"status":"ok"')
     if [ "$STATUS" = '"status":"ok"' ]; then
         break
     fi
