@@ -64,7 +64,7 @@ def reload_engine() -> None:
 reload_engine()
 
 
-@app.post("/predict")
+@app.post("/engine/predict")
 @engine_required
 async def predict(
     file: UploadFile = File(...), detail_level: DetailLevel = Query("basic", enum=["basic", "full"])
@@ -121,31 +121,34 @@ async def predict(
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
-@app.get("/get_image")
-@engine_required
-async def get_image(image_id: str) -> Response:
+@app.post("/engine/restart")
+async def restart_engine(execute: bool = Query(False)) -> JSONResponse:
     """
-    保存された画像をIDで取得する
+    推論エンジンを再起動する
+
+    モデルやメモリバンクを再読み込みする。設定変更後に使用する。
 
     Args:
-        image_id: 画像ID（例: "org_20250104_120000_OK"）
+        execute: True の場合のみ実行（安全装置）
 
     Returns:
-        Response: PNG形式の画像データ
-
-    Raises:
-        404: 指定されたIDの画像が見つからない場合
+        JSONResponse: 実行結果
+            - status (str): "reloaded" または "skipped"
+            - model (str): 再読み込み後のモデル名（reloadedの場合）
     """
-    image = engine.get_image_by_id(image_id)
-    if image is None:
-        logger.warning(f"Image not found: {image_id}")
-        return JSONResponse(status_code=404, content={"error": "Image not found"})
-
-    _, buffer = cv2.imencode(".png", image)
-    return Response(content=buffer.tobytes(), media_type="image/png")
+    if execute:
+        reload_engine()
+        logger.info("Engine reloaded complete")
+        return JSONResponse(content={"status": "reloaded", "model": engine.get_model_name()})
+    return JSONResponse(content={"status": "skipped"})
 
 
-@app.get("/get_image_list")
+@app.get("/engine/name")
+async def get_engine_name():
+    return JSONResponse(content={"name": engine.get_model_name()})
+
+
+@app.get("/images")
 @engine_required
 async def get_image_list(
     limit: int = Query(100, ge=1, le=1000),
@@ -182,7 +185,31 @@ async def get_image_list(
     return JSONResponse(content={"image_list": image_list[:limit]})
 
 
-@app.post("/clear_image")
+@app.get("/images/{image_id}")
+@engine_required
+async def get_image(image_id: str) -> Response:
+    """
+    保存された画像をIDで取得する
+
+    Args:
+        image_id: 画像ID（例: "org_20250104_120000_OK"）
+
+    Returns:
+        Response: PNG形式の画像データ
+
+    Raises:
+        404: 指定されたIDの画像が見つからない場合
+    """
+    image = engine.get_image_by_id(image_id)
+    if image is None:
+        logger.warning(f"Image not found: {image_id}")
+        return JSONResponse(status_code=404, content={"error": "Image not found"})
+
+    _, buffer = cv2.imencode(".png", image)
+    return Response(content=buffer.tobytes(), media_type="image/png")
+
+
+@app.post("/images/clear")
 @engine_required
 async def clear_image(execute: bool = Query(False)) -> JSONResponse:
     """
@@ -218,28 +245,6 @@ async def status() -> JSONResponse:
     return JSONResponse(
         content={"status": "ok", "model": engine.get_model_name(), "image_cache": len(engine.get_store_image_list())}
     )
-
-
-@app.post("/restart_engine")
-async def restart_engine(execute: bool = Query(False)) -> JSONResponse:
-    """
-    推論エンジンを再起動する
-
-    モデルやメモリバンクを再読み込みする。設定変更後に使用する。
-
-    Args:
-        execute: True の場合のみ実行（安全装置）
-
-    Returns:
-        JSONResponse: 実行結果
-            - status (str): "reloaded" または "skipped"
-            - model (str): 再読み込み後のモデル名（reloadedの場合）
-    """
-    if execute:
-        reload_engine()
-        logger.info("Engine reloaded complete")
-        return JSONResponse(content={"status": "reloaded", "model": engine.get_model_name()})
-    return JSONResponse(content={"status": "skipped"})
 
 
 @app.get("/gpu_info")
