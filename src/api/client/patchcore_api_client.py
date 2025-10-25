@@ -105,7 +105,7 @@ class PatchCoreApiClient:
         url = self.url_builder.make(endpoint)
         return self.session.post(url, timeout=self.timeout, **kwargs)
 
-    def status(self) -> Optional[Dict[str, Any]]:
+    def fetch_status(self) -> Optional[Dict[str, Any]]:
         """
         サーバーのステータスを取得
 
@@ -135,7 +135,7 @@ class PatchCoreApiClient:
         Returns:
             再起動結果の辞書。エラー時はNone
         """
-        url = self.url_builder.make("/restart_engine")
+        url = self.url_builder.make("/engine/restart")
         try:
             response = self.session.post(url, params={"execute": True}, timeout=self.timeout)
             response.raise_for_status()
@@ -144,7 +144,7 @@ class PatchCoreApiClient:
             print(f"restart_engine: {e}")
             return None
 
-    def get_image_list(
+    def fetch_image_list(
         self, limit: int = 100, prefix: Optional[str] = None, label: Optional[str] = None, reverse_list: bool = False
     ) -> Optional[Dict[str, Any]]:
         """
@@ -159,7 +159,7 @@ class PatchCoreApiClient:
         Returns:
             画像IDリストを含む辞書。エラー時はNone
         """
-        url = self.url_builder.make("/get_image_list")
+        url = self.url_builder.make("/images")
         params = {"limit": limit, "reverse_list": reverse_list}
         if prefix:
             params["prefix"] = prefix
@@ -171,7 +171,7 @@ class PatchCoreApiClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"get_image_list: {e}")
+            print(f"fetch_image_list: {e}")
             return None
 
     def predict(
@@ -196,7 +196,7 @@ class PatchCoreApiClient:
             >>> result = client.predict(img, detail_level="full")
             >>> print(result["label"])  # "OK" or "NG"
         """
-        url = self.url_builder.make("/predict")
+        url = self.url_builder.make("/engine/predict")
         image_bytes = convert_image_to_png_bytes(image)
         files = {"file": ("image.png", image_bytes, "image/png")}
         params = {"detail_level": detail_level}
@@ -216,7 +216,7 @@ class PatchCoreApiClient:
         print("リトライ上限に達しました")
         return None
 
-    def get_image(self, image_id: str) -> Optional[np.ndarray]:
+    def fetch_image(self, image_id: str) -> Optional[np.ndarray]:
         """
         IDから画像を取得
 
@@ -231,16 +231,16 @@ class PatchCoreApiClient:
             >>> img = client.get_image("org_NG_20250104120000_abc1")
             >>> cv2.imshow("Image", img)
         """
-        url = self.url_builder.make("/get_image")
+        url = self.url_builder.make(f"/images/{image_id}")
         try:
-            response = self.session.get(url, params={"image_id": image_id}, timeout=self.timeout)
+            response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
             return convert_png_bytes_to_ndarray(response.content)
         except requests.exceptions.RequestException as e:
-            print(f"get_image: {e}")
+            print(f"fetch_image: {e}")
             return None
 
-    def get_gpu_info(self) -> Dict[str, Any]:
+    def fetch_gpu_info(self) -> Dict[str, Any]:
         """
         GPU情報を取得
 
@@ -254,7 +254,7 @@ class PatchCoreApiClient:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_system_info(self) -> Dict[str, Any]:
+    def fetch_system_info(self) -> Dict[str, Any]:
         """
         システム情報を取得
 
@@ -279,7 +279,7 @@ class PatchCoreApiClient:
             クリア結果を含む辞書
         """
         try:
-            response = self.post("/clear_image", params={"execute": execute})
+            response = self.post("/images/clear", params={"execute": execute})
             response.raise_for_status()
             return response.json()
         except Exception as e:
