@@ -109,7 +109,16 @@ def run_creator():
                 fmap = model(inputs)
 
             patches = fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1))
-            memory_bank.append(patches.cpu().numpy())  # CPUに戻してからnumpy変換
+
+            sampling_ratio = 0.1
+            patches_np = patches.cpu().numpy()
+
+            if sampling_ratio < 1.0:
+                sample_size = int(len(patches_np) * sampling_ratio)
+                indices = np.random.choice(len(patches_np), sample_size, replace=False)
+                patches_np = patches_np[indices]
+
+            memory_bank.append(patches_np)
 
             if idx % 10 == 0:
                 logger.info(f"Training in progress... {idx+1}/{len(image_paths)}")
