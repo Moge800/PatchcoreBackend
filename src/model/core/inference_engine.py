@@ -356,8 +356,8 @@ class PatchCoreInferenceEngine:
         # 画像ID生成とキャッシュ保存
         label_str = "OK" if is_ok else "NG"
         image_id = f"{label_str}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:4]}"
-        self._store_image(f"org_{image_id}", image_array)
-        self._store_image(f"ovr_{image_id}", overlay)
+        threading.Thread(target=self._store_image, args=(f"org_{image_id}", image_array)).start()
+        threading.Thread(target=self._store_image, args=(f"ovr_{image_id}", overlay)).start()
 
         # NG画像保存（非同期）
         if not is_ok and self.ng_image_save:
