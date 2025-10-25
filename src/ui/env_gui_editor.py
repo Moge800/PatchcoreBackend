@@ -1,14 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import os
-import sys
 import shutil
 
 
 class EnvGUIEditor:
     """環境変数設定ファイル(.env)用のGUIエディタ"""
 
-    def __init__(self, root):
+    def __init__(self, root: tk.Toplevel):
         self.root = root
         self.env_path = ".env"
         self.env_example_path = ".env.example"
@@ -18,7 +17,8 @@ class EnvGUIEditor:
 
         # ウィンドウ設定
         self.root.title("環境変数設定編集")
-        self.root.resizable(True, True)
+        self.root.geometry("550x800")
+        self.root.resizable(False, True)
 
         # 環境変数項目の定義
         self._define_env_configs()
