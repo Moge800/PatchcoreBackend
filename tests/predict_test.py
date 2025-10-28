@@ -12,7 +12,7 @@ import glob
 import cv2
 import numpy as np
 from src.api.client.patchcore_api_client import PatchCoreApiClient
-from src.model.utils.inference_utils import load_image_unicode_path
+from src.ml_engine.utils.inference_utils import load_image_unicode_path
 
 
 def main():

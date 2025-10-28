@@ -6,9 +6,9 @@ from sklearn.decomposition import PCA  # noqa: F401
 from src.config.settings_loader import SettingsLoader
 from src.config import env_loader
 import logging
-from src.model.utils.inference_utils import save_overlay_image
-from src.model.utils.model_loader import load_model_and_assets
-from src.model.core.inference_core import run_inference_on_image
+from src.ml_engine.utils.inference_utils import save_overlay_image
+from src.ml_engine.utils.model_loader import load_model_and_assets
+from src.ml_engine.core.inference_core import run_inference_on_image
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 

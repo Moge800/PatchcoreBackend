@@ -5,11 +5,11 @@ import numpy as np
 import cv2
 from PIL import Image
 from io import BytesIO
-from src.model.core.inference_engine import PatchCoreInferenceEngine
+from src.ml_engine.core.inference_engine import PatchCoreInferenceEngine
 import time
 from functools import wraps
 import inspect
-from src.model.utils.device_utils import get_gpu_memory_info, check_gpu_environment
+from src.ml_engine.utils.device_utils import get_gpu_memory_info, check_gpu_environment
 import torch
 from src.utils.logger import setup_logger
 from src.types import DetailLevel

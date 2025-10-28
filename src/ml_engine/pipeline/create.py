@@ -9,8 +9,8 @@ from torchvision.models import resnet18, ResNet18_Weights
 from PIL import Image, ImageFilter, ImageEnhance
 from src.config.settings_loader import SettingsLoader
 from src.config import env_loader
-from src.model.utils.inference_utils import preprocess_cv2, load_image_unicode_path
-from src.model.utils.device_utils import get_device, clear_gpu_cache
+from src.ml_engine.utils.inference_utils import preprocess_cv2, load_image_unicode_path
+from src.ml_engine.utils.device_utils import get_device, clear_gpu_cache
 from src.utils.logger import setup_logger
 
 logger = setup_logger("model_creator", log_dir="logs/model")

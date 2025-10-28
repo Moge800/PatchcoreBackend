@@ -17,10 +17,10 @@ import threading
 import torch
 from sklearn.decomposition import PCA  # noqa: F401
 from src.config.settings_loader import SettingsLoader
-from src.model.utils.model_loader import load_model_and_assets
-from src.model.utils.inference_utils import preprocess_cv2
-from src.model.utils.score_utils import evaluate_z_score_map, is_ok_z
-from src.model.utils.device_utils import get_device, clear_gpu_cache
+from src.ml_engine.utils.model_loader import load_model_and_assets
+from src.ml_engine.utils.inference_utils import preprocess_cv2
+from src.ml_engine.utils.score_utils import evaluate_z_score_map, is_ok_z
+from src.ml_engine.utils.device_utils import get_device, clear_gpu_cache
 from src.utils.logger import setup_logger
 from src.types import PredictionResult, LabelType
 
