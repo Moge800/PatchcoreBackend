@@ -1,7 +1,10 @@
 import cv2
 import torch
 import numpy as np
-from src.ml_engines.PatchCore.utils.inference_utils import preprocess_cv2, load_image_unicode_path
+from src.ml_engines.PatchCore.utils.inference_utils import (
+    preprocess_cv2,
+    load_image_unicode_path,
+)
 from src.ml_engines.PatchCore.utils.score_utils import evaluate_z_score_map, is_ok_z
 
 
@@ -39,7 +42,9 @@ def run_inference_on_image(
     heatmap = cv2.applyColorMap(z_score_map_vis, cv2.COLORMAP_JET)
 
     overlay = cv2.addWeighted(
-        cv2.cvtColor(inputs.squeeze(0).permute(1, 2, 0).numpy() * 255, cv2.COLOR_RGB2BGR).astype(np.uint8),
+        cv2.cvtColor(
+            inputs.squeeze(0).permute(1, 2, 0).numpy() * 255, cv2.COLOR_RGB2BGR
+        ).astype(np.uint8),
         0.6,
         heatmap,
         0.4,

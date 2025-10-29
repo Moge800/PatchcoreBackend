@@ -54,7 +54,9 @@ def load_image_unicode_path(path: str) -> np.ndarray:
         raise ValueError(f"画像読み込みエラー ({path}): {str(e)}")
 
 
-def preprocess_cv2(image: np.ndarray, quad_pts: List[List[float]], output_size: Tuple[int, int]) -> torch.Tensor:
+def preprocess_cv2(
+    image: np.ndarray, quad_pts: List[List[float]], output_size: Tuple[int, int]
+) -> torch.Tensor:
     """
     指定された画像に対して射影変換を行い、モデル入力用のテンソルに変換する
 
@@ -79,7 +81,13 @@ def preprocess_cv2(image: np.ndarray, quad_pts: List[List[float]], output_size: 
     """
     src_pts = np.array(quad_pts, dtype=np.float32)
     dst_pts = np.array(
-        [[0, 0], [output_size[0], 0], [output_size[0], output_size[1]], [0, output_size[1]]], dtype=np.float32
+        [
+            [0, 0],
+            [output_size[0], 0],
+            [output_size[0], output_size[1]],
+            [0, output_size[1]],
+        ],
+        dtype=np.float32,
     )
     M = cv2.getPerspectiveTransform(src_pts, dst_pts)
     warped = cv2.warpPerspective(image, M, output_size)
@@ -87,7 +95,9 @@ def preprocess_cv2(image: np.ndarray, quad_pts: List[List[float]], output_size: 
     return tensor.unsqueeze(0)
 
 
-def save_overlay_image(overlay: np.ndarray, save_dir: str, index: int, label: str, image_path: str) -> None:
+def save_overlay_image(
+    overlay: np.ndarray, save_dir: str, index: int, label: str, image_path: str
+) -> None:
     """
     ヒートマップ重畳画像を保存する
 

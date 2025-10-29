@@ -23,7 +23,9 @@ def evaluate_z_score_map(z_map: np.ndarray, z_score_threshold: float) -> dict:
     }
 
 
-def is_ok_z(stats: dict, z_area_threshold: int = 100, z_max_threshold: float = 5.0) -> bool:
+def is_ok_z(
+    stats: dict, z_area_threshold: int = 100, z_max_threshold: float = 5.0
+) -> bool:
     """
     Zスコア統計情報に基づいて異常かどうかを判定する。
 

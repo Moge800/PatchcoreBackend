@@ -68,7 +68,9 @@ class PatchCoreInferenceEngine:
         self._initialized = True
 
         # ロガー初期化
-        self.logger = setup_logger(f"inference_engine_{model_name}", log_dir="logs/inference")
+        self.logger = setup_logger(
+            f"inference_engine_{model_name}", log_dir="logs/inference"
+        )
 
         self.model_name = model_name
         self.model_dir = os.path.join("models", model_name)
@@ -84,8 +86,8 @@ class PatchCoreInferenceEngine:
         self.use_mixed_precision = self.loader.get_variable("USE_MIXED_PRECISION")
         self.device = get_device(self.use_gpu, self.device_id)
 
-        self.model, self.memory_bank, self.pca, self.pixel_mean, self.pixel_std = load_model_and_assets(
-            self.model_dir, self.save_format
+        self.model, self.memory_bank, self.pca, self.pixel_mean, self.pixel_std = (
+            load_model_and_assets(self.model_dir, self.save_format)
         )
 
         # モデルをGPUに移動
@@ -96,8 +98,12 @@ class PatchCoreInferenceEngine:
 
         self._warmup()
 
-        self.logger.info(f"PatchCoreInferenceEngine started - id={id(self)}, model={self.model_name}")
-        self.logger.info(f"Device={self.device}, Mixed Precision={self.use_mixed_precision}")
+        self.logger.info(
+            f"PatchCoreInferenceEngine started - id={id(self)}, model={self.model_name}"
+        )
+        self.logger.info(
+            f"Device={self.device}, Mixed Precision={self.use_mixed_precision}"
+        )
 
     def _reload_settings(self) -> None:
         """
@@ -130,7 +136,9 @@ class PatchCoreInferenceEngine:
         これにより最初の実際の推論が高速化されます。
         """
         try:
-            dummy = np.zeros((self.image_size[1], self.image_size[0], 3), dtype=np.uint8)
+            dummy = np.zeros(
+                (self.image_size[1], self.image_size[0], 3), dtype=np.uint8
+            )
             inputs = preprocess_cv2(dummy, self.affine_points, self.image_size)
             inputs = inputs.to(self.device)
             _ = self._run_model(inputs)
@@ -150,7 +158,9 @@ class PatchCoreInferenceEngine:
     def __del__(self):
         """デストラクタ：GPUキャッシュをクリア"""
         clear_gpu_cache()
-        self.logger.info(f"PatchCoreInferenceEngine ended - id={id(self)}, model={self.model_name}")
+        self.logger.info(
+            f"PatchCoreInferenceEngine ended - id={id(self)}, model={self.model_name}"
+        )
 
     def _log_result(self, result: dict) -> None:
         """
@@ -270,7 +280,9 @@ class PatchCoreInferenceEngine:
         """
         return (raw_score_map - self.pixel_mean) / self.pixel_std_safe
 
-    def _generate_overlay(self, inputs: torch.Tensor, z_score_map: np.ndarray) -> np.ndarray:
+    def _generate_overlay(
+        self, inputs: torch.Tensor, z_score_map: np.ndarray
+    ) -> np.ndarray:
         """
         ヒートマップ重畳画像を生成
 
@@ -287,9 +299,13 @@ class PatchCoreInferenceEngine:
         z_vis = (z_vis / 5.0 * 255).astype(np.uint8)
         heatmap = cv2.applyColorMap(z_vis, cv2.COLORMAP_JET)
         input_img = (inputs.squeeze(0).permute(1, 2, 0).numpy() * 255).astype(np.uint8)
-        return cv2.addWeighted(cv2.cvtColor(input_img, cv2.COLOR_RGB2BGR), 0.6, heatmap, 0.4, 0)
+        return cv2.addWeighted(
+            cv2.cvtColor(input_img, cv2.COLOR_RGB2BGR), 0.6, heatmap, 0.4, 0
+        )
 
-    def _result_gen(self, label: LabelType, z_stats: dict, image_id: str) -> PredictionResult:
+    def _result_gen(
+        self, label: LabelType, z_stats: dict, image_id: str
+    ) -> PredictionResult:
         """
         推論結果を整形
 
@@ -356,13 +372,21 @@ class PatchCoreInferenceEngine:
         # 画像ID生成とキャッシュ保存
         label_str = "OK" if is_ok else "NG"
         image_id = f"{label_str}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:4]}"
-        threading.Thread(target=self._store_image, args=(f"org_{image_id}", image_array)).start()
-        threading.Thread(target=self._store_image, args=(f"ovr_{image_id}", overlay)).start()
+        threading.Thread(
+            target=self._store_image, args=(f"org_{image_id}", image_array)
+        ).start()
+        threading.Thread(
+            target=self._store_image, args=(f"ovr_{image_id}", overlay)
+        ).start()
 
         # NG画像保存（非同期）
         if not is_ok and self.ng_image_save:
             save_dir = os.path.join(
-                self.settings_dir, "execute", "NG", datetime.now().strftime("%Y%m%d"), datetime.now().strftime("%H%M")
+                self.settings_dir,
+                "execute",
+                "NG",
+                datetime.now().strftime("%Y%m%d"),
+                datetime.now().strftime("%H%M"),
             )
             os.makedirs(save_dir, exist_ok=True)
             self._save_ng_images_async(save_dir, image_id, overlay, image_array)
@@ -373,7 +397,9 @@ class PatchCoreInferenceEngine:
 
         return result
 
-    def _save_ng_images_async(self, save_dir: str, image_id: str, overlay: np.ndarray, original: np.ndarray) -> None:
+    def _save_ng_images_async(
+        self, save_dir: str, image_id: str, overlay: np.ndarray, original: np.ndarray
+    ) -> None:
         """
         NG画像を非同期で保存
 
@@ -389,7 +415,9 @@ class PatchCoreInferenceEngine:
         def save():
             try:
                 cv2.imwrite(os.path.join(save_dir, f"{image_id}_overlay.png"), overlay)
-                cv2.imwrite(os.path.join(save_dir, f"{image_id}_original.png"), original)
+                cv2.imwrite(
+                    os.path.join(save_dir, f"{image_id}_original.png"), original
+                )
             except Exception as e:
                 self.logger.error(f"NG image save failed: {e}")
 

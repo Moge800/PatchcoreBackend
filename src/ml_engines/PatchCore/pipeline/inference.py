@@ -32,7 +32,9 @@ def run_inference():
     if not image_paths:
         raise FileNotFoundError("No test images found.")
 
-    model, memory_bank, pca, pixel_mean, pixel_std = load_model_and_assets(MODEL_DIR, SAVE_FORMAT)
+    model, memory_bank, pca, pixel_mean, pixel_std = load_model_and_assets(
+        MODEL_DIR, SAVE_FORMAT
+    )
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     img_save_dir = os.path.join(SETTINGS_DIR, "execute", "test", timestamp)
@@ -57,13 +59,21 @@ def run_inference():
         label = "OK" if is_ok else "NG"
         logging.info("-" * 10)
         logging.info(f"{image_path}")
-        logging.info(f"z_sum={z_stats['total']:.2f}, z_max={z_stats['maxval']:.2f}, z_area={z_stats['area']}")
+        logging.info(
+            f"z_sum={z_stats['total']:.2f}, z_max={z_stats['maxval']:.2f}, z_area={z_stats['area']}"
+        )
         logging.info(f"is_ok_z={is_ok}")
         logging.info("-" * 10)
 
         color = (0, 255, 0) if label == "OK" else (0, 0, 255)
         cv2.putText(
-            overlay, f"[{label}] {os.path.basename(image_path)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2
+            overlay,
+            f"[{label}] {os.path.basename(image_path)}",
+            (10, 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            color,
+            2,
         )
 
         save_overlay_image(overlay, img_save_dir, i, label, image_path)

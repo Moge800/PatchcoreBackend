@@ -233,17 +233,23 @@ class EnvGUIEditor:
         scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
 
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        scrollable_frame.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
 
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
         # タイトル
-        title_label = tk.Label(scrollable_frame, text="環境変数設定", font=("Arial", 16, "bold"))
+        title_label = tk.Label(
+            scrollable_frame, text="環境変数設定", font=("Arial", 16, "bold")
+        )
         title_label.pack(pady=(0, 20))
 
         # .envファイル状態表示
-        self.status_label = tk.Label(scrollable_frame, text="", font=("Arial", 10), fg="blue")
+        self.status_label = tk.Label(
+            scrollable_frame, text="", font=("Arial", 10), fg="blue"
+        )
         self.status_label.pack(pady=(0, 10))
         self._update_status_label()
 
@@ -259,16 +265,24 @@ class EnvGUIEditor:
         button_frame.pack(fill=tk.X, pady=(20, 0))
 
         # ボタン
-        ttk.Button(button_frame, text=".env作成", command=self._create_env_file).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(button_frame, text="設定を読み直し", command=self._load_current_env).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(button_frame, text="デフォルトに戻す", command=self._reset_to_defaults).pack(
+        ttk.Button(button_frame, text=".env作成", command=self._create_env_file).pack(
             side=tk.LEFT, padx=(0, 10)
         )
-        ttk.Button(button_frame, text="検証", command=self._validate_env).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(button_frame, text="保存", command=self._save_env, style="Accent.TButton").pack(
+        ttk.Button(
+            button_frame, text="設定を読み直し", command=self._load_current_env
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(
+            button_frame, text="デフォルトに戻す", command=self._reset_to_defaults
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(button_frame, text="検証", command=self._validate_env).pack(
             side=tk.LEFT, padx=(0, 10)
         )
-        ttk.Button(button_frame, text="キャンセル", command=self.root.destroy).pack(side=tk.RIGHT)
+        ttk.Button(
+            button_frame, text="保存", command=self._save_env, style="Accent.TButton"
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(button_frame, text="キャンセル", command=self.root.destroy).pack(
+            side=tk.RIGHT
+        )
 
         # レイアウト配置
         canvas.pack(side="left", fill="both", expand=True)
@@ -299,7 +313,9 @@ class EnvGUIEditor:
 
         for category, items in categories.items():
             # カテゴリラベル
-            category_frame = ttk.LabelFrame(self.settings_frame, text=f"【{category}】", padding=(10, 5))
+            category_frame = ttk.LabelFrame(
+                self.settings_frame, text=f"【{category}】", padding=(10, 5)
+            )
             category_frame.grid(row=row, column=0, sticky="ew", padx=5, pady=10)
             self.settings_frame.grid_columnconfigure(0, weight=1)
 
@@ -311,12 +327,18 @@ class EnvGUIEditor:
                 category_frame.grid_columnconfigure(0, weight=1)
 
                 # ラベル
-                label = tk.Label(item_frame, text=config["label"], font=("Arial", 10, "bold"))
+                label = tk.Label(
+                    item_frame, text=config["label"], font=("Arial", 10, "bold")
+                )
                 label.grid(row=0, column=0, sticky="w")
 
                 # 説明
                 desc_label = tk.Label(
-                    item_frame, text=config["description"], font=("Arial", 9), fg="gray", wraplength=400
+                    item_frame,
+                    text=config["description"],
+                    font=("Arial", 9),
+                    fg="gray",
+                    wraplength=400,
                 )
                 desc_label.grid(row=1, column=0, sticky="w", pady=(0, 5))
 
@@ -332,7 +354,11 @@ class EnvGUIEditor:
                 elif config["type"] == "choice":
                     var = tk.StringVar(value=str(config["default"]))
                     widget = ttk.Combobox(
-                        widget_frame, textvariable=var, values=config["choices"], state="readonly", width=25
+                        widget_frame,
+                        textvariable=var,
+                        values=config["choices"],
+                        state="readonly",
+                        width=25,
                     )
                     widget.pack(anchor="w")
 
@@ -352,7 +378,10 @@ class EnvGUIEditor:
 
                     if "min" in config and "max" in config:
                         range_label = tk.Label(
-                            widget_container, text=f"({config['min']} - {config['max']})", font=("Arial", 8), fg="gray"
+                            widget_container,
+                            text=f"({config['min']} - {config['max']})",
+                            font=("Arial", 8),
+                            fg="gray",
                         )
                         range_label.pack(side=tk.LEFT, padx=(5, 0))
 
@@ -372,12 +401,16 @@ class EnvGUIEditor:
         if os.path.exists(self.env_path):
             self.status_label.config(text=f"✓ {self.env_path} が存在します", fg="green")
         else:
-            self.status_label.config(text=f"⚠ {self.env_path} が存在しません", fg="orange")
+            self.status_label.config(
+                text=f"⚠ {self.env_path} が存在しません", fg="orange"
+            )
 
     def _create_env_file(self):
         """.envファイルを.env.exampleから作成"""
         if os.path.exists(self.env_path):
-            result = messagebox.askyesno("確認", f"{self.env_path} は既に存在します。上書きしますか？")
+            result = messagebox.askyesno(
+                "確認", f"{self.env_path} は既に存在します。上書きしますか？"
+            )
             if not result:
                 return
 
@@ -403,7 +436,10 @@ class EnvGUIEditor:
                 for env_name, var in self.env_vars.items():
                     config = self.env_configs[env_name]
                     self._set_default_value(env_name, var)
-                messagebox.showwarning("警告", f"{self.env_path} が存在しないため、デフォルト値を使用しています")
+                messagebox.showwarning(
+                    "警告",
+                    f"{self.env_path} が存在しないため、デフォルト値を使用しています",
+                )
                 return
 
             # .envファイルから現在の値を読み取り
@@ -451,7 +487,9 @@ class EnvGUIEditor:
         if messagebox.askyesno("確認", "すべての環境変数をデフォルト値に戻しますか？"):
             for env_name, var in self.env_vars.items():
                 self._set_default_value(env_name, var)
-            messagebox.showinfo("完了", "すべての環境変数をデフォルト値にリセットしました")
+            messagebox.showinfo(
+                "完了", "すべての環境変数をデフォルト値にリセットしました"
+            )
 
     def _validate_env(self):
         """環境変数値を検証"""
@@ -467,9 +505,13 @@ class EnvGUIEditor:
                     max_val = config.get("max")
 
                     if min_val is not None and value < min_val:
-                        errors.append(f"{config['label']}: {min_val}以上の値を入力してください")
+                        errors.append(
+                            f"{config['label']}: {min_val}以上の値を入力してください"
+                        )
                     if max_val is not None and value > max_val:
-                        errors.append(f"{config['label']}: {max_val}以下の値を入力してください")
+                        errors.append(
+                            f"{config['label']}: {max_val}以下の値を入力してください"
+                        )
 
                 elif config["type"] == "string":
                     value = var.get().strip()
@@ -480,7 +522,9 @@ class EnvGUIEditor:
                 errors.append(f"{config['label']}: 無効な値です ({e})")
 
         if errors:
-            messagebox.showerror("検証エラー", "以下のエラーがあります:\n\n" + "\n".join(errors))
+            messagebox.showerror(
+                "検証エラー", "以下のエラーがあります:\n\n" + "\n".join(errors)
+            )
             return False
         else:
             messagebox.showinfo("検証成功", "すべての環境変数値が正常です")
@@ -529,7 +573,8 @@ class EnvGUIEditor:
 
             self._update_status_label()
             messagebox.showinfo(
-                "保存完了", "環境変数を保存しました\n\n変更を反映するにはアプリケーションの再起動が必要です"
+                "保存完了",
+                "環境変数を保存しました\n\n変更を反映するにはアプリケーションの再起動が必要です",
             )
             self.root.destroy()
 

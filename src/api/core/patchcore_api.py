@@ -9,7 +9,10 @@ from src.ml_engines.PatchCore.core.inference_engine import PatchCoreInferenceEng
 import time
 from functools import wraps
 import inspect
-from src.ml_engines.PatchCore.utils.device_utils import get_gpu_memory_info, check_gpu_environment
+from src.ml_engines.PatchCore.utils.device_utils import (
+    get_gpu_memory_info,
+    check_gpu_environment,
+)
 import torch
 from src.utils.logger import setup_logger
 from src.types import DetailLevel
@@ -33,7 +36,10 @@ def engine_required(func: Callable) -> Callable:
     @wraps(func)
     async def async_wrapper(*args, **kwargs) -> JSONResponse:
         if engine is None:
-            return JSONResponse(status_code=503, content={"status": "error", "message": "Engine not initialized"})
+            return JSONResponse(
+                status_code=503,
+                content={"status": "error", "message": "Engine not initialized"},
+            )
         if inspect.iscoroutinefunction(func):
             return await func(*args, **kwargs)
         else:
@@ -67,7 +73,8 @@ reload_engine()
 @app.post("/engine/predict")
 @engine_required
 async def predict(
-    file: UploadFile = File(...), detail_level: DetailLevel = Query("basic", enum=["basic", "full"])
+    file: UploadFile = File(...),
+    detail_level: DetailLevel = Query("basic", enum=["basic", "full"]),
 ) -> JSONResponse:
     """
     画像の異常検出を実行する
@@ -112,7 +119,11 @@ async def predict(
         else:
             response_data["thresholds"] = result["thresholds"]
             # basicモードでは必要最低限の統計のみ返す
-            response_data["z_stats"] = {k: result["z_stats"][k] for k in ["area", "maxval"] if k in result["z_stats"]}
+            response_data["z_stats"] = {
+                k: result["z_stats"][k]
+                for k in ["area", "maxval"]
+                if k in result["z_stats"]
+            }
 
         return JSONResponse(content=response_data)
 
@@ -139,7 +150,9 @@ async def restart_engine(execute: bool = Query(False)) -> JSONResponse:
     if execute:
         reload_engine()
         logger.info("Engine reloaded complete")
-        return JSONResponse(content={"status": "reloaded", "model": engine.get_model_name()})
+        return JSONResponse(
+            content={"status": "reloaded", "model": engine.get_model_name()}
+        )
     return JSONResponse(content={"status": "skipped"})
 
 
@@ -243,7 +256,11 @@ async def status() -> JSONResponse:
             - image_cache (int): キャッシュされている画像の数
     """
     return JSONResponse(
-        content={"status": "ok", "model": engine.get_model_name(), "image_cache": len(engine.get_store_image_list())}
+        content={
+            "status": "ok",
+            "model": engine.get_model_name(),
+            "image_cache": len(engine.get_store_image_list()),
+        }
     )
 
 
@@ -326,7 +343,9 @@ async def system_info() -> JSONResponse:
 
         return JSONResponse(content=info)
     except Exception as e:
-        return JSONResponse(content={"error": f"システム情報の取得に失敗: {str(e)}"}, status_code=500)
+        return JSONResponse(
+            content={"error": f"システム情報の取得に失敗: {str(e)}"}, status_code=500
+        )
 
 
 if __name__ == "__main__":

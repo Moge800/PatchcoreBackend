@@ -9,7 +9,11 @@ import requests
 import numpy as np
 import time
 from typing import Optional, Dict, Any
-from src.api.utils.api_util import convert_image_to_png_bytes, convert_png_bytes_to_ndarray, ApiUrlBuilder
+from src.api.utils.api_util import (
+    convert_image_to_png_bytes,
+    convert_png_bytes_to_ndarray,
+    ApiUrlBuilder,
+)
 
 
 class PatchCoreApiClient:
@@ -42,7 +46,9 @@ class PatchCoreApiClient:
         if base_url is None:
             from src.config import env_loader
 
-            base_url = f"http://{env_loader.API_CLIENT_HOST}:{env_loader.API_CLIENT_PORT}"
+            base_url = (
+                f"http://{env_loader.API_CLIENT_HOST}:{env_loader.API_CLIENT_PORT}"
+            )
 
         self.base_url = base_url.rstrip("/")
         self.url_builder = ApiUrlBuilder(self.base_url)
@@ -137,7 +143,9 @@ class PatchCoreApiClient:
         """
         url = self.url_builder.make("/engine/restart")
         try:
-            response = self.session.post(url, params={"execute": True}, timeout=self.timeout)
+            response = self.session.post(
+                url, params={"execute": True}, timeout=self.timeout
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -145,7 +153,11 @@ class PatchCoreApiClient:
             return None
 
     def fetch_image_list(
-        self, limit: int = 100, prefix: Optional[str] = None, label: Optional[str] = None, reverse_list: bool = False
+        self,
+        limit: int = 100,
+        prefix: Optional[str] = None,
+        label: Optional[str] = None,
+        reverse_list: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """
         キャッシュされた画像のIDリストを取得
@@ -175,7 +187,11 @@ class PatchCoreApiClient:
             return None
 
     def predict(
-        self, image: np.ndarray, detail_level: str = "basic", retries: int = 3, retry_delay: float = 0.5
+        self,
+        image: np.ndarray,
+        detail_level: str = "basic",
+        retries: int = 3,
+        retry_delay: float = 0.5,
     ) -> Optional[Dict[str, Any]]:
         """
         画像の異常検出推論を実行
@@ -203,7 +219,9 @@ class PatchCoreApiClient:
 
         for attempt in range(1, retries + 1):
             try:
-                response = self.session.post(url, files=files, params=params, timeout=self.timeout)
+                response = self.session.post(
+                    url, files=files, params=params, timeout=self.timeout
+                )
                 response.raise_for_status()
                 return response.json()
             except requests.exceptions.RequestException as e:

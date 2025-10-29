@@ -32,7 +32,16 @@ class ProjectionPointSelector:
         if 0 < len(self.points) < self.num_points:
             cv2.line(img, (x, y), tuple(self.points[-1]), (0, 255, 0), 2)
 
-        cv2.putText(img, f"({x}, {y})", (0, 20), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(
+            img,
+            f"({x}, {y})",
+            (0, 20),
+            cv2.FONT_HERSHEY_PLAIN,
+            1,
+            (255, 255, 255),
+            1,
+            cv2.LINE_AA,
+        )
         cv2.imshow(self.window_name, img)
 
     def select_points(self):
@@ -40,7 +49,10 @@ class ProjectionPointSelector:
             path = tkinter.filedialog.askopenfilename(
                 title="画像を選択してください",
                 initialdir=".",
-                filetypes=[("画像ファイル", "*.png *.jpg *.jpeg *.bmp"), ("すべてのファイル", "*.*")],
+                filetypes=[
+                    ("画像ファイル", "*.png *.jpg *.jpeg *.bmp"),
+                    ("すべてのファイル", "*.*"),
+                ],
             )
 
             # キャンセルされた場合は空文字列が返される

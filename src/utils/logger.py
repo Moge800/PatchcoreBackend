@@ -55,7 +55,10 @@ def setup_logger(
         logger.handlers.clear()
 
     # フォーマッター（タイムスタンプ - ロガー名 - レベル - メッセージ）
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     # コンソールハンドラ
     if console:
@@ -67,7 +70,9 @@ def setup_logger(
     # ファイルハンドラ
     if file:
         os.makedirs(log_dir, exist_ok=True)
-        log_file = os.path.join(log_dir, f"{name}_{datetime.now().strftime('%Y%m%d')}.log")
+        log_file = os.path.join(
+            log_dir, f"{name}_{datetime.now().strftime('%Y%m%d')}.log"
+        )
         file_handler = logging.FileHandler(log_file, encoding="utf-8")
         file_handler.setLevel(level)
         file_handler.setFormatter(formatter)

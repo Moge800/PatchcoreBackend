@@ -9,7 +9,10 @@ from torchvision.models import resnet18, ResNet18_Weights
 from PIL import Image, ImageFilter, ImageEnhance
 from src.config.settings_loader import SettingsLoader
 from src.config import env_loader
-from src.ml_engines.PatchCore.utils.inference_utils import preprocess_cv2, load_image_unicode_path
+from src.ml_engines.PatchCore.utils.inference_utils import (
+    preprocess_cv2,
+    load_image_unicode_path,
+)
 from src.ml_engines.PatchCore.utils.device_utils import get_device, clear_gpu_cache
 from src.utils.logger import setup_logger
 
@@ -21,7 +24,9 @@ class FeatureExtractor(nn.Module):
         super().__init__()
         resnet = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
 
-        self.layer0 = nn.Sequential(resnet.conv1, resnet.bn1, resnet.relu, resnet.maxpool)
+        self.layer0 = nn.Sequential(
+            resnet.conv1, resnet.bn1, resnet.relu, resnet.maxpool
+        )
         self.layer1 = resnet.layer1
         self.layer2 = resnet.layer2 if depth >= 2 else None
         self.layer3 = resnet.layer3 if depth >= 3 else None
@@ -94,7 +99,11 @@ def run_creator():
     memory_bank = []
 
     # 混合精度演算の設定（新しいAPI）
-    scaler = torch.amp.GradScaler("cuda") if USE_MIXED_PRECISION and device.type == "cuda" else None
+    scaler = (
+        torch.amp.GradScaler("cuda")
+        if USE_MIXED_PRECISION and device.type == "cuda"
+        else None
+    )
 
     with torch.no_grad():
         for idx, path in enumerate(image_paths):
@@ -160,11 +169,17 @@ def run_creator():
             else:
                 fmap = model(inputs)
 
-            patches = fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1)).cpu().numpy()
+            patches = (
+                fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1)).cpu().numpy()
+            )
             patches = pca.transform(patches)
-            scores = np.linalg.norm(patches - memory_bank_compressed.mean(axis=0), axis=1)
+            scores = np.linalg.norm(
+                patches - memory_bank_compressed.mean(axis=0), axis=1
+            )
             score_map = scores.reshape(fmap.shape[2], fmap.shape[3])
-            raw_score_map = cv2.resize(score_map, IMAGE_SIZE, interpolation=cv2.INTER_CUBIC)
+            raw_score_map = cv2.resize(
+                score_map, IMAGE_SIZE, interpolation=cv2.INTER_CUBIC
+            )
             score_maps.append(raw_score_map)
             if idx % 10 == 0:
                 logger.info(f"Creating Z-score map... {idx+1}/{len(image_paths)}")

@@ -36,11 +36,15 @@ def make_env_file() -> None:
         return
 
     if os.path.exists(_env_path + ".example"):
-        with open(_env_path + ".example", "r", encoding="utf-8") as src, open(_env_path, "w", encoding="utf-8") as dst:
+        with open(_env_path + ".example", "r", encoding="utf-8") as src, open(
+            _env_path, "w", encoding="utf-8"
+        ) as dst:
             dst.write(src.read())
         print(f"[Info] {_env_path} を {_env_path+'.example'} から作成しました。")
     else:
-        print(f"[Error] {_env_path+'.example'} が見つかりません。デフォルトの.envファイルを作成できません。")
+        print(
+            f"[Error] {_env_path+'.example'} が見つかりません。デフォルトの.envファイルを作成できません。"
+        )
 
 
 # .envファイルがなければ作成し、読み込む
@@ -185,7 +189,9 @@ NG_IMAGE_SAVE: bool = env_loader.get("NG_IMAGE_SAVE", True, bool)
 
 # ===== セキュリティ設定 =====
 API_KEY: str = env_loader.get("API_KEY", "your-secret-api-key-here")
-ALLOWED_ORIGINS: List[str] = env_loader.get("ALLOWED_ORIGINS", ["http://localhost:3000", "http://localhost:8000"], list)
+ALLOWED_ORIGINS: List[str] = env_loader.get(
+    "ALLOWED_ORIGINS", ["http://localhost:3000", "http://localhost:8000"], list
+)
 
 
 def get_cpu_optimization() -> Dict[str, Any]:

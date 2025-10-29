@@ -30,7 +30,9 @@ class SettingsLoader:
         """
         self.settings_path = settings_path
         if not os.path.isfile(settings_path):
-            raise FileNotFoundError(f"{settings_path} が存在しません。settings.py を配置してください。")
+            raise FileNotFoundError(
+                f"{settings_path} が存在しません。settings.py を配置してください。"
+            )
 
         try:
             self.reload()
@@ -86,7 +88,9 @@ class SettingsLoader:
 
         # settings.pyから値を取得
         if not hasattr(self.module, name):
-            raise AttributeError(f"{name} が {self.module.__name__} に定義されていません。")
+            raise AttributeError(
+                f"{name} が {self.module.__name__} に定義されていません。"
+            )
         return getattr(self.module, name)
 
     def reload(self) -> None:
@@ -149,12 +153,16 @@ class SettingsLoader:
                 # 各点が[x, y]形式か確認
                 for i, point in enumerate(affine_points):
                     if not isinstance(point, (list, tuple)) or len(point) != 2:
-                        errors.append(f"AFFINE_POINTS[{i}] は [x, y] 形式である必要があります")
+                        errors.append(
+                            f"AFFINE_POINTS[{i}] は [x, y] 形式である必要があります"
+                        )
 
             # IMAGE_SIZE検証
             image_size = self.get_variable("IMAGE_SIZE")
             if not isinstance(image_size, (tuple, list)) or len(image_size) != 2:
-                errors.append("IMAGE_SIZE は (width, height) のタプルである必要があります")
+                errors.append(
+                    "IMAGE_SIZE は (width, height) のタプルである必要があります"
+                )
             else:
                 if not all(isinstance(x, int) and x > 0 for x in image_size):
                     errors.append("IMAGE_SIZE の値は正の整数である必要があります")
@@ -172,23 +180,31 @@ class SettingsLoader:
 
             # PCA設定チェック（異常検出に関与）
             pca_variance = self.get_variable("PCA_VARIANCE")
-            if not isinstance(pca_variance, (int, float)) or not (0 < pca_variance <= 1):
+            if not isinstance(pca_variance, (int, float)) or not (
+                0 < pca_variance <= 1
+            ):
                 errors.append("PCA_VARIANCE は 0 < x <= 1 の範囲である必要があります")
 
             # 特徴深度チェック
             feature_depth = self.get_variable("FEATURE_DEPTH")
             if not isinstance(feature_depth, int) or feature_depth not in [1, 2, 3, 4]:
-                errors.append("FEATURE_DEPTH は 1, 2, 3, 4 のいずれかである必要があります")
+                errors.append(
+                    "FEATURE_DEPTH は 1, 2, 3, 4 のいずれかである必要があります"
+                )
 
             # 保存形式チェック
             save_format = self.get_variable("SAVE_FORMAT")
             if save_format not in ["compressed", "full"]:
-                errors.append("SAVE_FORMAT は 'compressed' または 'full' である必要があります")
+                errors.append(
+                    "SAVE_FORMAT は 'compressed' または 'full' である必要があります"
+                )
 
             # データ拡張設定チェック
             enable_augment = self.get_variable("ENABLE_AUGMENT")
             if not isinstance(enable_augment, bool):
-                errors.append("ENABLE_AUGMENT は True または False である必要があります")
+                errors.append(
+                    "ENABLE_AUGMENT は True または False である必要があります"
+                )
 
         except AttributeError as e:
             errors.append(str(e))

@@ -36,7 +36,9 @@ def get_device(use_gpu: bool = True, device_id: int = 0) -> torch.device:
             logger.info(f"GPU使用: {torch.cuda.get_device_name(device_id)}")
             return device
         else:
-            logger.warning(f"指定されたGPU ID {device_id} が見つかりません。CPUを使用します。")
+            logger.warning(
+                f"指定されたGPU ID {device_id} が見つかりません。CPUを使用します。"
+            )
     elif use_gpu:
         logger.info("CUDA が利用できません。CPUを使用します。")
     else:
@@ -121,8 +123,12 @@ def check_gpu_environment() -> Dict[str, Any]:
 
     if torch.cuda.is_available():
         info["gpu_count"] = torch.cuda.device_count()
-        info["gpu_names"] = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
+        info["gpu_names"] = [
+            torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())
+        ]
     else:
-        info["reason"] = "CUDA not available - check NVIDIA drivers and CUDA installation"
+        info["reason"] = (
+            "CUDA not available - check NVIDIA drivers and CUDA installation"
+        )
 
     return info
