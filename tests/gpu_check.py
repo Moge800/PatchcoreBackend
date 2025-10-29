@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import torch
 from src.config.settings_loader import SettingsLoader
-from src.ml_engine.utils.device_utils import check_gpu_environment
+from src.ml_engines.PatchCore.utils.device_utils import check_gpu_environment
 
 
 def main():

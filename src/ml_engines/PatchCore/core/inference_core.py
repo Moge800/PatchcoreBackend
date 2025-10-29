@@ -1,8 +1,8 @@
 import cv2
 import torch
 import numpy as np
-from src.ml_engine.utils.inference_utils import preprocess_cv2, load_image_unicode_path
-from src.ml_engine.utils.score_utils import evaluate_z_score_map, is_ok_z
+from src.ml_engines.PatchCore.utils.inference_utils import preprocess_cv2, load_image_unicode_path
+from src.ml_engines.PatchCore.utils.score_utils import evaluate_z_score_map, is_ok_z
 
 
 def run_inference_on_image(
