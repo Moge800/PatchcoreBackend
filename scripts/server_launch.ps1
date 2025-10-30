@@ -1,5 +1,11 @@
 # utf-8 do not use BOM
 
+# scriptsディレクトリから親ディレクトリに移動
+$scriptDir = $PSScriptRoot
+if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
+$parentDir = Split-Path $scriptDir -Parent
+Set-Location $parentDir
+
 $env:PYTHONPATH = (Resolve-Path ".").Path
 $python = ".\.venv\Scripts\python.exe"
 $module = "src.api.core.patchcore_api:app"

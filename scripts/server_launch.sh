@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# scriptsディレクトリから親ディレクトリに移動
+cd "$(dirname "$0")/.."
+
 # .venv をアクティベート
 source .venv/bin/activate
 
