@@ -50,7 +50,7 @@ def main():
         y_cpu = torch.randn(1000, 1000)
 
         start = time.perf_counter()
-        z_cpu = torch.matmul(x_cpu, y_cpu)
+        _ = torch.matmul(x_cpu, y_cpu)  # 結果は使用しない
         end = time.perf_counter()
 
         print(f"行列乗算テスト (CPU): {(end-start)*1000:.2f}ms")

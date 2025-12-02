@@ -15,10 +15,14 @@ class SettingsGUIEditor:
     def __init__(self, root: tk.Toplevel, model_name: str):
         self.root = root
         self.model_name = model_name
-        self.settings_path = os.path.join("settings", "models", model_name, "settings.py")
+        self.settings_path = os.path.join(
+            "settings", "models", model_name, "settings.py"
+        )
 
         # 設定値を保持する辞書
-        self.settings_vars: dict[str, tk.StringVar | tk.BooleanVar | tk.IntVar | tk.DoubleVar] = {}
+        self.settings_vars: dict[
+            str, tk.StringVar | tk.BooleanVar | tk.IntVar | tk.DoubleVar
+        ] = {}
 
         # ウィンドウ設定
         self.root.title(f"設定編集 - {model_name}")
@@ -151,13 +155,19 @@ class SettingsGUIEditor:
         scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
 
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        scrollable_frame.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
 
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
         # タイトル
-        title_label = tk.Label(scrollable_frame, text=f"モデル設定: {self.model_name}", font=("Arial", 16, "bold"))
+        title_label = tk.Label(
+            scrollable_frame,
+            text=f"モデル設定: {self.model_name}",
+            font=("Arial", 16, "bold"),
+        )
         title_label.pack(pady=(0, 20))
 
         # 設定項目のフレーム
@@ -172,17 +182,24 @@ class SettingsGUIEditor:
         button_frame.pack(fill=tk.X, pady=(20, 0))
 
         # ボタン
-        ttk.Button(button_frame, text="設定を読み直し", command=self._load_current_settings).pack(
+        ttk.Button(
+            button_frame, text="設定を読み直し", command=self._load_current_settings
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(
+            button_frame, text="デフォルトに戻す", command=self._reset_to_defaults
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(button_frame, text="検証", command=self._validate_settings).pack(
             side=tk.LEFT, padx=(0, 10)
         )
-        ttk.Button(button_frame, text="デフォルトに戻す", command=self._reset_to_defaults).pack(
-            side=tk.LEFT, padx=(0, 10)
+        ttk.Button(
+            button_frame,
+            text="保存",
+            command=self._save_settings,
+            style="Accent.TButton",
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(button_frame, text="キャンセル", command=self.root.destroy).pack(
+            side=tk.RIGHT
         )
-        ttk.Button(button_frame, text="検証", command=self._validate_settings).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(button_frame, text="保存", command=self._save_settings, style="Accent.TButton").pack(
-            side=tk.LEFT, padx=(0, 10)
-        )
-        ttk.Button(button_frame, text="キャンセル", command=self.root.destroy).pack(side=tk.RIGHT)
 
         # レイアウト配置
         canvas.pack(side="left", fill="both", expand=True)
@@ -205,13 +222,20 @@ class SettingsGUIEditor:
 
         for setting_name, config in self.setting_configs.items():
             # ラベルフレーム
-            frame = ttk.LabelFrame(self.settings_frame, text=config["label"], padding=(10, 5))
+            frame = ttk.LabelFrame(
+                self.settings_frame, text=config["label"], padding=(10, 5)
+            )
             frame.grid(row=row, column=0, sticky="ew", padx=5, pady=5)
             self.settings_frame.grid_columnconfigure(0, weight=1)
 
             # 説明ラベル
             desc_label = tk.Label(
-                frame, text=config["description"], font=("Arial", 9), fg="gray", wraplength=400, justify=tk.LEFT
+                frame,
+                text=config["description"],
+                font=("Arial", 9),
+                fg="gray",
+                wraplength=400,
+                justify=tk.LEFT,
             )
             desc_label.pack(anchor="w", pady=(0, 5))
 
@@ -251,7 +275,10 @@ class SettingsGUIEditor:
 
                 if "min" in config and "max" in config:
                     range_label = tk.Label(
-                        widget_container, text=f"({config['min']} - {config['max']})", font=("Arial", 8), fg="gray"
+                        widget_container,
+                        text=f"({config['min']} - {config['max']})",
+                        font=("Arial", 8),
+                        fg="gray",
                     )
                     range_label.pack(side=tk.LEFT, padx=(5, 0))
 
@@ -274,7 +301,10 @@ class SettingsGUIEditor:
 
                 if "min" in config and "max" in config:
                     range_label = tk.Label(
-                        widget_container, text=f"({config['min']} - {config['max']})", font=("Arial", 8), fg="gray"
+                        widget_container,
+                        text=f"({config['min']} - {config['max']})",
+                        font=("Arial", 8),
+                        fg="gray",
                     )
                     range_label.pack(side=tk.LEFT, padx=(5, 0))
 
@@ -284,16 +314,21 @@ class SettingsGUIEditor:
                 widget.pack(anchor="w")
 
             elif config["type"] == "tuple_int":
-                var = tk.StringVar(value=f"{config['default'][0]}, {config['default'][1]}")
+                var = tk.StringVar(
+                    value=f"{config['default'][0]}, {config['default'][1]}"
+                )
                 widget_container = ttk.Frame(widget_frame)
                 widget_container.pack(anchor="w")
 
                 tk.Label(widget_container, text="(").pack(side=tk.LEFT)
                 widget = ttk.Entry(widget_container, textvariable=var, width=15)
                 widget.pack(side=tk.LEFT)
-                tk.Label(widget_container, text=") 形式: 幅, 高さ", font=("Arial", 8), fg="gray").pack(
-                    side=tk.LEFT, padx=(5, 0)
-                )
+                tk.Label(
+                    widget_container,
+                    text=") 形式: 幅, 高さ",
+                    font=("Arial", 8),
+                    fg="gray",
+                ).pack(side=tk.LEFT, padx=(5, 0))
 
             # 変数を保存
             self.settings_vars[setting_name] = var
@@ -303,7 +338,9 @@ class SettingsGUIEditor:
         """現在の設定ファイルから値を読み込み"""
         try:
             if not os.path.exists(self.settings_path):
-                messagebox.showerror("エラー", f"設定ファイルが見つかりません: {self.settings_path}")
+                messagebox.showerror(
+                    "エラー", f"設定ファイルが見つかりません: {self.settings_path}"
+                )
                 return
 
             loader = SettingsLoader(self.settings_path)
@@ -322,7 +359,10 @@ class SettingsGUIEditor:
                     elif config["type"] == "string":
                         var.set(str(current_value))
                     elif config["type"] == "tuple_int":
-                        if isinstance(current_value, (list, tuple)) and len(current_value) == 2:
+                        if (
+                            isinstance(current_value, (list, tuple))
+                            and len(current_value) == 2
+                        ):
                             var.set(f"{current_value[0]}, {current_value[1]}")
                         else:
                             var.set("224, 224")  # デフォルト
@@ -365,7 +405,9 @@ class SettingsGUIEditor:
                 if config["type"] == "tuple_int":
                     value_str = var.get().strip()
                     if not re.match(r"^\s*\d+\s*,\s*\d+\s*$", value_str):
-                        errors.append(f"{config['label']}: 正しい形式で入力してください (例: 224, 224)")
+                        errors.append(
+                            f"{config['label']}: 正しい形式で入力してください (例: 224, 224)"
+                        )
                         continue
                     width, height = map(int, [x.strip() for x in value_str.split(",")])
                     if width <= 0 or height <= 0:
@@ -377,9 +419,13 @@ class SettingsGUIEditor:
                     max_val = config.get("max")
 
                     if min_val is not None and value < min_val:
-                        errors.append(f"{config['label']}: {min_val}以上の値を入力してください")
+                        errors.append(
+                            f"{config['label']}: {min_val}以上の値を入力してください"
+                        )
                     if max_val is not None and value > max_val:
-                        errors.append(f"{config['label']}: {max_val}以下の値を入力してください")
+                        errors.append(
+                            f"{config['label']}: {max_val}以下の値を入力してください"
+                        )
 
                 elif config["type"] == "string":
                     value = var.get().strip()
@@ -390,7 +436,9 @@ class SettingsGUIEditor:
                 errors.append(f"{config['label']}: 無効な値です ({e})")
 
         if errors:
-            messagebox.showerror("検証エラー", "以下のエラーがあります:\n\n" + "\n".join(errors))
+            messagebox.showerror(
+                "検証エラー", "以下のエラーがあります:\n\n" + "\n".join(errors)
+            )
             return False
         else:
             messagebox.showinfo("検証成功", "すべての設定値が正常です")

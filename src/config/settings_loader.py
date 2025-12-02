@@ -101,7 +101,9 @@ class SettingsLoader:
         """
         spec = importlib.util.spec_from_file_location("settings", self.settings_path)
         if spec is None or spec.loader is None:
-            raise ImportError(f"設定ファイルの読み込みに失敗しました: {self.settings_path}")
+            raise ImportError(
+                f"設定ファイルの読み込みに失敗しました: {self.settings_path}"
+            )
         self.module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.module)
 

@@ -125,9 +125,7 @@ async def predict(
             # basicモードでは必要最低限の統計のみ返す
             z_stats_dict = cast(Dict[str, Any], result["z_stats"])
             response_data["z_stats"] = {
-                k: z_stats_dict[k]
-                for k in ["area", "maxval"]
-                if k in z_stats_dict
+                k: z_stats_dict[k] for k in ["area", "maxval"] if k in z_stats_dict
             }
 
         return JSONResponse(content=response_data)

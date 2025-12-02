@@ -4,7 +4,6 @@
 ハードコードされたパスやマジックナンバーを一元管理します。
 """
 
-import os
 from pathlib import Path
 
 # プロジェクトルート
@@ -26,6 +25,7 @@ MEMORY_BANK_COMPRESSED_FILENAME = "memory_bank_compressed.pkl"
 PCA_FILENAME = "pca.pkl"
 MODEL_FILENAME = "model.pt"
 PIXEL_STATS_FILENAME = "pixel_stats.pkl"
+
 
 # モデル関連のパスを生成するヘルパー関数
 def get_model_dir(model_name: str) -> Path:

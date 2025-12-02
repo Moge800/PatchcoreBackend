@@ -60,10 +60,14 @@ class ModelLauncherGUI:
 
         self.model_base_dir = os.path.join("settings", "models")
         self.model_dirs = [
-            d for d in os.listdir(self.model_base_dir) if os.path.isdir(os.path.join(self.model_base_dir, d))
+            d
+            for d in os.listdir(self.model_base_dir)
+            if os.path.isdir(os.path.join(self.model_base_dir, d))
         ]
         self.has_models = len(self.model_dirs) > 0
-        self.selected_model = tk.StringVar(value=self.model_dirs[0] if self.has_models else "")
+        self.selected_model = tk.StringVar(
+            value=self.model_dirs[0] if self.has_models else ""
+        )
         self.current_model_name = read_model_name_from_env()  # .envから読み込み
 
         self._setup_widgets()
@@ -75,17 +79,25 @@ class ModelLauncherGUI:
         header_frame.pack(fill=tk.X, padx=10, pady=10)
 
         self.model_label = tk.Label(
-            header_frame, text=f"現在モデル名: {self.selected_model.get()}", font=("Arial", 14, "bold")
+            header_frame,
+            text=f"現在モデル名: {self.selected_model.get()}",
+            font=("Arial", 14, "bold"),
         )
         self.model_label.pack(pady=(0, 10))
 
         dropdown_frame = ttk.Frame(header_frame)
         dropdown_frame.pack(pady=5)
 
-        tk.Label(dropdown_frame, text="モデル選択:", font=("Arial", 10)).pack(side=tk.LEFT, padx=(0, 10))
+        tk.Label(dropdown_frame, text="モデル選択:", font=("Arial", 10)).pack(
+            side=tk.LEFT, padx=(0, 10)
+        )
 
         self.model_dropdown = ttk.Combobox(
-            dropdown_frame, textvariable=self.selected_model, values=self.model_dirs, state="readonly", width=25
+            dropdown_frame,
+            textvariable=self.selected_model,
+            values=self.model_dirs,
+            state="readonly",
+            width=25,
         )
         self.model_dropdown.pack(side=tk.LEFT)
         self.model_dropdown.bind("<<ComboboxSelected>>", self._on_model_select)
@@ -104,7 +116,9 @@ class ModelLauncherGUI:
         log_frame = ttk.LabelFrame(self.root, text="ログ", padding=(5, 5))
         log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
 
-        self.log_text = scrolledtext.ScrolledText(log_frame, width=80, height=12, font=("Consolas", 9))
+        self.log_text = scrolledtext.ScrolledText(
+            log_frame, width=80, height=12, font=("Consolas", 9)
+        )
         self.log_text.pack(fill=tk.BOTH, expand=True)
 
         # ボタンエリアのメインフレーム
@@ -112,7 +126,9 @@ class ModelLauncherGUI:
         button_main_frame.pack(fill=tk.X, padx=10, pady=10)
 
         # 設定関連ボタンパネル
-        settings_frame = ttk.LabelFrame(button_main_frame, text="設定編集", padding=(10, 5))
+        settings_frame = ttk.LabelFrame(
+            button_main_frame, text="設定編集", padding=(10, 5)
+        )
         settings_frame.pack(fill=tk.X, pady=(0, 10))
 
         # 設定ボタンを2列レイアウト
@@ -187,7 +203,9 @@ class ModelLauncherGUI:
         self.affine_button.pack(pady=2, padx=5, fill=tk.X)
 
         # 実行関連ボタンパネル
-        execution_frame = ttk.LabelFrame(button_main_frame, text="学習・推論実行", padding=(10, 5))
+        execution_frame = ttk.LabelFrame(
+            button_main_frame, text="学習・推論実行", padding=(10, 5)
+        )
         execution_frame.pack(fill=tk.X, pady=(0, 5))
 
         # 実行ボタンを横並びレイアウト
@@ -242,8 +260,12 @@ class ModelLauncherGUI:
             self.current_model_name = new_model
             self._update_button_states()
             self.model_label.config(text=f"現在モデル名: {new_model}")
-            self._log_message(f'[モデル確定] .env の DEFAULT_MODEL_NAME を "{new_model}" に更新しました\n')
-            messagebox.showinfo("モデル確定", f'デフォルトモデルを "{new_model}" に設定しました')
+            self._log_message(
+                f'[モデル確定] .env の DEFAULT_MODEL_NAME を "{new_model}" に更新しました\n'
+            )
+            messagebox.showinfo(
+                "モデル確定", f'デフォルトモデルを "{new_model}" に設定しました'
+            )
         except Exception as e:
             self._log_message(f"[エラー] モデル名の更新に失敗: {e}\n")
             messagebox.showerror("エラー", f"モデル名の更新に失敗しました:\n{e}")
@@ -280,7 +302,9 @@ class ModelLauncherGUI:
             from src.ui.settings_gui_editor import open_settings_editor
 
             open_settings_editor(self.selected_model.get())
-            self._log_message(f"[設定編集] {self.selected_model.get()} の詳細設定を開きました\n")
+            self._log_message(
+                f"[設定編集] {self.selected_model.get()} の詳細設定を開きました\n"
+            )
         except Exception as e:
             self._log_message(f"[エラー] 設定編集GUI起動失敗: {e}\n")
             import traceback
@@ -290,7 +314,9 @@ class ModelLauncherGUI:
 
     def _on_edit_settings_file_click(self):
         """設定ファイルを直接エディタで開く（旧機能）"""
-        settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
+        settings_path = os.path.join(
+            "settings", "models", self.selected_model.get(), "settings.py"
+        )
         try:
             os.system(f'"{settings_path}"')
             self._log_message(f"[ファイル編集] {settings_path} を開きました\n")
@@ -319,7 +345,8 @@ class ModelLauncherGUI:
             # .envファイルが存在しない場合は.env.exampleからコピー
             response = messagebox.askyesno(
                 ".envファイルが存在しません",
-                ".env.exampleから.envファイルを作成しますか？\n\n" "作成後、エディタで開きます。",
+                ".env.exampleから.envファイルを作成しますか？\n\n"
+                "作成後、エディタで開きます。",
             )
             if response:
                 try:
@@ -330,7 +357,9 @@ class ModelLauncherGUI:
                     messagebox.showinfo("作成成功", ".envファイルを作成しました")
                 except Exception as e:
                     self._log_message(f"[エラー] .env作成失敗: {e}\n")
-                    messagebox.showerror("エラー", f".envファイルの作成に失敗しました:\n{e}")
+                    messagebox.showerror(
+                        "エラー", f".envファイルの作成に失敗しました:\n{e}"
+                    )
                     return
             else:
                 return
@@ -353,7 +382,9 @@ class ModelLauncherGUI:
 
     def _on_validate_settings_click(self):
         """設定ファイルを検証（環境変数の状態も表示）"""
-        settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
+        settings_path = os.path.join(
+            "settings", "models", self.selected_model.get(), "settings.py"
+        )
         self._log_message(f"\n[設定検証開始] {settings_path}\n")
         self._log_message("=" * 60 + "\n")
 
@@ -368,24 +399,38 @@ class ModelLauncherGUI:
             self._log_message("【モデル設定】 settings.py で管理\n")
             self._log_message("-" * 60 + "\n")
             self._log_message(f"  IMAGE_SIZE: {loader.get_variable('IMAGE_SIZE')}\n")
-            self._log_message(f"  FEATURE_DEPTH: {loader.get_variable('FEATURE_DEPTH')}\n")
+            self._log_message(
+                f"  FEATURE_DEPTH: {loader.get_variable('FEATURE_DEPTH')}\n"
+            )
             self._log_message(f"  SAVE_FORMAT: {loader.get_variable('SAVE_FORMAT')}\n")
-            self._log_message(f"  PCA_VARIANCE: {loader.get_variable('PCA_VARIANCE')}\n")
-            self._log_message(f"  ENABLE_AUGMENT: {loader.get_variable('ENABLE_AUGMENT')}\n\n")
+            self._log_message(
+                f"  PCA_VARIANCE: {loader.get_variable('PCA_VARIANCE')}\n"
+            )
+            self._log_message(
+                f"  ENABLE_AUGMENT: {loader.get_variable('ENABLE_AUGMENT')}\n\n"
+            )
 
             # ===== 異常検出しきい値 =====
             self._log_message("【異常検出しきい値】\n")
             self._log_message("-" * 60 + "\n")
-            self._log_message(f"  Z_SCORE_THRESHOLD: {loader.get_variable('Z_SCORE_THRESHOLD')}\n")
-            self._log_message(f"  Z_AREA_THRESHOLD: {loader.get_variable('Z_AREA_THRESHOLD')}\n")
-            self._log_message(f"  Z_MAX_THRESHOLD: {loader.get_variable('Z_MAX_THRESHOLD')}\n\n")
+            self._log_message(
+                f"  Z_SCORE_THRESHOLD: {loader.get_variable('Z_SCORE_THRESHOLD')}\n"
+            )
+            self._log_message(
+                f"  Z_AREA_THRESHOLD: {loader.get_variable('Z_AREA_THRESHOLD')}\n"
+            )
+            self._log_message(
+                f"  Z_MAX_THRESHOLD: {loader.get_variable('Z_MAX_THRESHOLD')}\n\n"
+            )
 
             # ===== 実行環境設定 (.envで上書き可能) =====
             self._log_message("【実行環境設定】 .env で上書き可能\n")
             self._log_message("-" * 60 + "\n")
 
             # GPU設定の詳細表示
-            use_gpu_settings = loader.module.USE_GPU if hasattr(loader.module, "USE_GPU") else None
+            use_gpu_settings = (
+                loader.module.USE_GPU if hasattr(loader.module, "USE_GPU") else None
+            )
             use_gpu_actual = loader.get_variable("USE_GPU")
             use_gpu_env = env_loader.USE_GPU
 
@@ -401,11 +446,18 @@ class ModelLauncherGUI:
                     self._log_message(" [settings.pyのデフォルト値]\n")
 
             # GPU_DEVICE_IDの表示
-            gpu_device_settings = loader.module.GPU_DEVICE_ID if hasattr(loader.module, "GPU_DEVICE_ID") else None
+            gpu_device_settings = (
+                loader.module.GPU_DEVICE_ID
+                if hasattr(loader.module, "GPU_DEVICE_ID")
+                else None
+            )
             gpu_device_actual = loader.get_variable("GPU_DEVICE_ID")
             gpu_device_env = env_loader.GPU_DEVICE_ID
 
-            if gpu_device_settings is not None and gpu_device_settings != gpu_device_actual:
+            if (
+                gpu_device_settings is not None
+                and gpu_device_settings != gpu_device_actual
+            ):
                 self._log_message(
                     f"  GPU_DEVICE_ID: {gpu_device_actual} ⚠️ [.env={gpu_device_env} が settings.py={gpu_device_settings} を上書き]\n"
                 )
@@ -413,14 +465,22 @@ class ModelLauncherGUI:
                 self._log_message(f"  GPU_DEVICE_ID: {gpu_device_actual}\n")
 
             # その他の実行環境設定
-            self._log_message(f"  USE_MIXED_PRECISION: {loader.get_variable('USE_MIXED_PRECISION')}\n")
-            self._log_message(f"  MAX_CACHE_IMAGE: {loader.get_variable('MAX_CACHE_IMAGE')}\n")
-            self._log_message(f"  NG_IMAGE_SAVE: {loader.get_variable('NG_IMAGE_SAVE')}\n\n")
+            self._log_message(
+                f"  USE_MIXED_PRECISION: {loader.get_variable('USE_MIXED_PRECISION')}\n"
+            )
+            self._log_message(
+                f"  MAX_CACHE_IMAGE: {loader.get_variable('MAX_CACHE_IMAGE')}\n"
+            )
+            self._log_message(
+                f"  NG_IMAGE_SAVE: {loader.get_variable('NG_IMAGE_SAVE')}\n\n"
+            )
 
             # ===== 環境設定 (.envのみ) =====
             self._log_message("【環境設定】 .env のみで管理\n")
             self._log_message("-" * 60 + "\n")
-            self._log_message(f"  DEFAULT_MODEL_NAME: {env_loader.DEFAULT_MODEL_NAME}\n")
+            self._log_message(
+                f"  DEFAULT_MODEL_NAME: {env_loader.DEFAULT_MODEL_NAME}\n"
+            )
             self._log_message(f"  LOG_LEVEL: {env_loader.LOG_LEVEL}\n")
             self._log_message(f"  LOG_DIR: {env_loader.LOG_DIR}\n")
             self._log_message(f"  API_SERVER_HOST: {env_loader.API_SERVER_HOST}\n")
@@ -441,7 +501,10 @@ class ModelLauncherGUI:
                 for error in errors:
                     self._log_message(f"  - {error}\n")
                 self._log_message("\n")
-                messagebox.showerror("検証失敗", "設定ファイルにエラーがあります:\n\n" + "\n".join(errors))
+                messagebox.showerror(
+                    "検証失敗",
+                    "設定ファイルにエラーがあります:\n\n" + "\n".join(errors),
+                )
 
         except FileNotFoundError as e:
             self._log_message(f"✗ エラー: {e}\n\n")
@@ -472,7 +535,9 @@ class ModelLauncherGUI:
 
     def _on_affine_point_click(self):
         """アフィン座標取得を実行（直接インポート）"""
-        settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
+        settings_path = os.path.join(
+            "settings", "models", self.selected_model.get(), "settings.py"
+        )
 
         def task():
             self._update_widgets_state(tk.DISABLED)
@@ -506,12 +571,15 @@ class ModelLauncherGUI:
         threading.Thread(target=task, daemon=True).start()
 
     def _on_train_button_click(self):
-        settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
+        settings_path = os.path.join(
+            "settings", "models", self.selected_model.get(), "settings.py"
+        )
 
         # 学習実行前に設定を検証
         if not self._validate_settings_silent(settings_path):
             response = messagebox.askyesno(
-                "設定に問題があります", "設定ファイルに問題がありますが、学習を続行しますか？"
+                "設定に問題があります",
+                "設定ファイルに問題がありますが、学習を続行しますか？",
             )
             if not response:
                 self._log_message("[学習中止] ユーザーによりキャンセルされました\n\n")
@@ -521,12 +589,15 @@ class ModelLauncherGUI:
         self._run_script_async(script_path, settings_path)
 
     def _on_inference_button_click(self):
-        settings_path = os.path.join("settings", "models", self.selected_model.get(), "settings.py")
+        settings_path = os.path.join(
+            "settings", "models", self.selected_model.get(), "settings.py"
+        )
 
         # 推論実行前に設定を検証
         if not self._validate_settings_silent(settings_path):
             response = messagebox.askyesno(
-                "設定に問題があります", "設定ファイルに問題がありますが、推論を続行しますか？"
+                "設定に問題があります",
+                "設定ファイルに問題がありますが、推論を続行しますか？",
             )
             if not response:
                 self._log_message("[推論中止] ユーザーによりキャンセルされました\n\n")

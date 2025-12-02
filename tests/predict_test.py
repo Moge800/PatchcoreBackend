@@ -25,8 +25,12 @@ def main():
     try:
         system_info = client.get("/system_info").json()
         print(f"システム情報: {system_info['platform']}")
-        print(f"CPU: {system_info['cpu_count']}コア, RAM: {system_info['memory_total']}")
-        print(f"PyTorch: {system_info['pytorch_version']}, CUDA: {system_info['cuda_support']}")
+        print(
+            f"CPU: {system_info['cpu_count']}コア, RAM: {system_info['memory_total']}"
+        )
+        print(
+            f"PyTorch: {system_info['pytorch_version']}, CUDA: {system_info['cuda_support']}"
+        )
     except Exception:
         print("システム情報の取得に失敗")
 
@@ -80,7 +84,15 @@ def main():
             color = (0, 255, 0) if response["label"] == "OK" else (0, 0, 255)
 
             # ラベル表示
-            cv2.putText(img_display, response["label"], (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2)
+            cv2.putText(
+                img_display,
+                response["label"],
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1.0,
+                color,
+                2,
+            )
 
             # 詳細情報表示
             cv2.putText(
@@ -102,19 +114,34 @@ def main():
                 1,
             )
             cv2.putText(
-                img_display, f"Total: {end-start:.3f}s", (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1
+                img_display,
+                f"Total: {end-start:.3f}s",
+                (10, 100),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255, 255, 255),
+                1,
             )
 
             # 進行状況表示
             cv2.putText(
-                img_display, f"{i+1}/{len(img_list)}", (10, 390), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1
+                img_display,
+                f"{i+1}/{len(img_list)}",
+                (10, 390),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255, 255, 255),
+                1,
             )
 
             cv2.imshow("frame", img_display)
             cv2.waitKey(1)
 
         elapse = end - start
-        print(f"\r進行状況: {i+1}/{len(img_list)} | 時間: {elapse:.4f}s | OK: {ok_count} | NG: {ng_count}", end="")
+        print(
+            f"\r進行状況: {i+1}/{len(img_list)} | 時間: {elapse:.4f}s | OK: {ok_count} | NG: {ng_count}",
+            end="",
+        )
         tmp.append(elapse)
 
     print("\n\n=== 結果サマリー ===")
@@ -130,9 +157,23 @@ def main():
         for i, ng in enumerate(ng_list):
             img = client.fetch_image(ng)
             if img is not None:
-                cv2.putText(img, f"NG[{i}/{len(ng_list)}]", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
                 cv2.putText(
-                    img, "Press any key to continue...", (10, 370), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1
+                    img,
+                    f"NG[{i}/{len(ng_list)}]",
+                    (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1.0,
+                    (0, 0, 255),
+                    2,
+                )
+                cv2.putText(
+                    img,
+                    "Press any key to continue...",
+                    (10, 370),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (255, 255, 255),
+                    1,
                 )
                 img = cv2.resize(img, [400, 400])
                 cv2.imshow("NG image", img)

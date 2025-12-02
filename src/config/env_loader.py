@@ -7,7 +7,7 @@
 
 import os
 from pathlib import Path
-from typing import Any, TypeVar, Type, Dict, List, Union, overload, Optional
+from typing import Any, TypeVar, Type, Dict, List
 from dotenv import load_dotenv
 
 # プロジェクトルートの.envファイルを読み込み
@@ -37,9 +37,10 @@ def make_env_file() -> None:
 
     env_example_path = _env_path.parent / ".env.example"
     if env_example_path.exists():
-        with open(env_example_path, "r", encoding="utf-8") as src, open(
-            _env_path, "w", encoding="utf-8"
-        ) as dst:
+        with (
+            open(env_example_path, "r", encoding="utf-8") as src,
+            open(_env_path, "w", encoding="utf-8") as dst,
+        ):
             dst.write(src.read())
         print(f"[Info] {_env_path} を {env_example_path} から作成しました。")
     else:

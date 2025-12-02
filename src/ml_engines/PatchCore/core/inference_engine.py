@@ -22,7 +22,7 @@ from src.ml_engines.PatchCore.utils.inference_utils import preprocess_cv2
 from src.ml_engines.PatchCore.utils.score_utils import evaluate_z_score_map, is_ok_z
 from src.ml_engines.PatchCore.utils.device_utils import get_device, clear_gpu_cache
 from src.utils.logger import setup_logger
-from src.types import PredictionResult, LabelType
+from src.types import PredictionResult
 
 
 class PatchCoreInferenceEngine:
