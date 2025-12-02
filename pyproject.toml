@@ -1,4 +1,70 @@
+[project]
+name = "patchcore-backend"
+version = "1.0.0"
+description = "PatchCoreアルゴリズムを使用した異常検知システムのバックエンド実装"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Moge800", email = ""}
+]
+keywords = ["patchcore", "anomaly-detection", "computer-vision", "fastapi"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "fastapi>=0.118.2",
+    "uvicorn>=0.37.0",
+    "python-multipart>=0.0.20",
+    "python-dotenv>=1.1.1",
+    "numpy>=2.2.6",
+    "opencv-python>=4.12.0.88",
+    "pillow>=11.3.0",
+    "torch>=2.8.0",
+    "torchvision>=0.23.0",
+    "scikit-learn>=1.7.2",
+    "pydantic>=2.12.0",
+    "requests>=2.32.5",
+    "psutil>=7.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.0.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "settings*"]
+
 [tool.mypy]
 ignore_missing_imports = true
 disable_error_code = ["import-untyped"]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
 
