@@ -35,15 +35,16 @@ def make_env_file() -> None:
         print(f"[Info] {_env_path} は既に存在します。上書きしません。")
         return
 
-    if os.path.exists(_env_path + ".example"):
-        with open(_env_path + ".example", "r", encoding="utf-8") as src, open(
+    env_example_path = _env_path.parent / ".env.example"
+    if env_example_path.exists():
+        with open(env_example_path, "r", encoding="utf-8") as src, open(
             _env_path, "w", encoding="utf-8"
         ) as dst:
             dst.write(src.read())
-        print(f"[Info] {_env_path} を {_env_path+'.example'} から作成しました。")
+        print(f"[Info] {_env_path} を {env_example_path} から作成しました。")
     else:
         print(
-            f"[Error] {_env_path+'.example'} が見つかりません。デフォルトの.envファイルを作成できません。"
+            f"[Error] {env_example_path} が見つかりません。デフォルトの.envファイルを作成できません。"
         )
 
 

@@ -21,6 +21,9 @@ from src.config import env_loader
 app = FastAPI(title=env_loader.APP_NAME, version=env_loader.APP_VERSION)
 logger = setup_logger("patchcore_api", log_dir=env_loader.LOG_DIR + "/api")
 
+# グローバル変数: 推論エンジンインスタンス
+engine: PatchCoreInferenceEngine | None = None
+
 
 def engine_required(func: Callable) -> Callable:
     """
@@ -96,6 +99,7 @@ async def predict(
     Raises:
         500: 予測処理中にエラーが発生した場合
     """
+    assert engine is not None  # engine_requiredデコレータで保証済み
     try:
         start = time.perf_counter()
 
@@ -150,6 +154,7 @@ async def restart_engine(execute: bool = Query(False)) -> JSONResponse:
     if execute:
         reload_engine()
         logger.info("Engine reloaded complete")
+        assert engine is not None  # reload_engineで初期化済み
         return JSONResponse(
             content={"status": "reloaded", "model": engine.get_model_name()}
         )
@@ -158,6 +163,7 @@ async def restart_engine(execute: bool = Query(False)) -> JSONResponse:
 
 @app.get("/engine/name")
 async def get_engine_name() -> JSONResponse:
+    assert engine is not None  # reload_engine()で初期化済み
     return JSONResponse(content={"name": engine.get_model_name()})
 
 
@@ -188,6 +194,7 @@ async def get_image_list(
         JSONResponse: 画像IDのリスト
             - image_list (List[str]): 画像IDの配列
     """
+    assert engine is not None  # engine_requiredデコレータで保証済み
     image_list = engine.get_store_image_list()
     if prefix:
         image_list = [img_id for img_id in image_list if img_id.startswith(prefix)]
@@ -213,6 +220,7 @@ async def get_image(image_id: str) -> Response:
     Raises:
         404: 指定されたIDの画像が見つからない場合
     """
+    assert engine is not None  # engine_requiredデコレータで保証済み
     image = engine.get_image_by_id(image_id)
     if image is None:
         logger.warning(f"Image not found: {image_id}")
@@ -235,6 +243,7 @@ async def clear_image(execute: bool = Query(False)) -> JSONResponse:
         JSONResponse: 実行結果
             - status (str): "cleared" または "skipped"
     """
+    assert engine is not None  # engine_requiredデコレータで保証済み
 
     if execute:
         engine.clear_store_image()
@@ -255,6 +264,7 @@ async def status() -> JSONResponse:
             - model (str): 現在のモデル名
             - image_cache (int): キャッシュされている画像の数
     """
+    assert engine is not None  # engine_requiredデコレータで保証済み
     return JSONResponse(
         content={
             "status": "ok",
