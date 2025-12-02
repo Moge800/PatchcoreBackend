@@ -9,3 +9,8 @@ __pycache__/
 .env
 logs/*
 log/*
+.mypy_cache/
+uv.lock
+*.egg-info/
+dist/
+build/
