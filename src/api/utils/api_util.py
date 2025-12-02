@@ -60,11 +60,11 @@ def convert_png_bytes_to_ndarray(image_bytes: bytes) -> np.ndarray:
         >>> cv2.imshow("Image", img)
     """
     try:
-        image_bytes = np.frombuffer(image_bytes, dtype=np.uint8)
-        image_array = cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
+        image_buffer: np.ndarray = np.frombuffer(image_bytes, dtype=np.uint8)  # type: ignore[assignment]
+        image_array = cv2.imdecode(image_buffer, cv2.IMREAD_COLOR)  # type: ignore[arg-type]
         if image_array is None:
             raise ValueError("画像のデコードに失敗しました")
-        return image_array
+        return image_array  # type: ignore[no-any-return]
     except Exception as e:
         raise ValueError(f"画像の変換エラー: {e}")
 

@@ -13,7 +13,7 @@ class EnvGUIEditor:
         self.env_example_path = ".env.example"
 
         # 設定値を保持する辞書
-        self.env_vars = {}
+        self.env_vars: dict[str, tk.StringVar | tk.BooleanVar | tk.IntVar] = {}
 
         # ウィンドウ設定
         self.root.title("環境変数設定編集")

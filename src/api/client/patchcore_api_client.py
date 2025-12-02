@@ -127,7 +127,7 @@ class PatchCoreApiClient:
         try:
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except requests.exceptions.RequestException as e:
             print(f"status: {e}")
             return None
@@ -147,7 +147,7 @@ class PatchCoreApiClient:
                 url, params={"execute": True}, timeout=self.timeout
             )
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except requests.exceptions.RequestException as e:
             print(f"restart_engine: {e}")
             return None
@@ -172,7 +172,7 @@ class PatchCoreApiClient:
             画像IDリストを含む辞書。エラー時はNone
         """
         url = self.url_builder.make("/images")
-        params = {"limit": limit, "reverse_list": reverse_list}
+        params: Dict[str, Any] = {"limit": limit, "reverse_list": reverse_list}
         if prefix:
             params["prefix"] = prefix
         if label:
@@ -181,7 +181,7 @@ class PatchCoreApiClient:
         try:
             response = self.session.get(url, params=params, timeout=self.timeout)
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except requests.exceptions.RequestException as e:
             print(f"fetch_image_list: {e}")
             return None
@@ -223,7 +223,7 @@ class PatchCoreApiClient:
                     url, files=files, params=params, timeout=self.timeout
                 )
                 response.raise_for_status()
-                return response.json()
+                return response.json()  # type: ignore[no-any-return]
             except requests.exceptions.RequestException as e:
                 if attempt < retries:
                     print(f"リトライ {attempt}/{retries}: {e}")
@@ -268,7 +268,7 @@ class PatchCoreApiClient:
         try:
             response = self.get("/gpu_info")
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except Exception as e:
             return {"error": str(e)}
 
@@ -282,7 +282,7 @@ class PatchCoreApiClient:
         try:
             response = self.get("/system_info")
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except Exception as e:
             return {"error": str(e)}
 
@@ -299,6 +299,6 @@ class PatchCoreApiClient:
         try:
             response = self.post("/images/clear", params={"execute": execute})
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore[no-any-return]
         except Exception as e:
             return {"error": str(e)}

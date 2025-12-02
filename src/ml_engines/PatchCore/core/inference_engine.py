@@ -10,7 +10,7 @@ import os
 import uuid
 from collections import OrderedDict
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal, Dict, Any, cast
 import numpy as np
 import cv2
 import threading
@@ -41,12 +41,13 @@ class PatchCoreInferenceEngine:
     """
 
     _instance = None
+    _initialized: bool
 
     def __new__(cls, *args, **kwargs):
         """シングルトンインスタンスを返す"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+            cls._instance._initialized: bool = False
         return cls._instance
 
     def __init__(self, model_name: str) -> None:
@@ -94,7 +95,7 @@ class PatchCoreInferenceEngine:
         self.model = self.model.to(self.device)
         self.pixel_std_safe = np.where(self.pixel_std == 0, 1e-6, self.pixel_std)
 
-        self.image_store = OrderedDict()
+        self.image_store: OrderedDict[str, np.ndarray] = OrderedDict()
 
         self._warmup()
 
@@ -114,7 +115,7 @@ class PatchCoreInferenceEngine:
         self.loader.reload()
         self.affine_points = self.loader.get_variable("AFFINE_POINTS")
         self.image_size = self.loader.get_variable("IMAGE_SIZE")
-        self.save_format = self.loader.get_variable("SAVE_FORMAT")
+        self.save_format: str = self.loader.get_variable("SAVE_FORMAT")
         self.z_score_threshold = self.loader.get_variable("Z_SCORE_THRESHOLD")
         self.z_area_threshold = self.loader.get_variable("Z_AREA_THRESHOLD")
         self.z_max_threshold = self.loader.get_variable("Z_MAX_THRESHOLD")
@@ -162,7 +163,7 @@ class PatchCoreInferenceEngine:
             f"PatchCoreInferenceEngine ended - id={id(self)}, model={self.model_name}"
         )
 
-    def _log_result(self, result: dict) -> None:
+    def _log_result(self, result: Dict[str, Any]) -> None:
         """
         推論結果をログファイルに記録
 
@@ -224,7 +225,7 @@ class PatchCoreInferenceEngine:
 
         すべての保存済み画像をメモリから削除します。
         """
-        self.image_store = OrderedDict()
+        self.image_store.clear()
 
     def _run_model(self, inputs: torch.Tensor) -> np.ndarray:
         """
@@ -252,7 +253,7 @@ class PatchCoreInferenceEngine:
             patches = patches.cpu().numpy()  # CPUに戻す
             patches = self.pca.transform(patches)
             scores = np.linalg.norm(patches - self.memory_bank.mean(axis=0), axis=1)
-            return scores.reshape(fmap.shape[2], fmap.shape[3])
+            return scores.reshape(fmap.shape[2], fmap.shape[3])  # type: ignore[no-any-return]
 
     def _resize_score_map(self, score_map: np.ndarray) -> np.ndarray:
         """
@@ -278,7 +279,7 @@ class PatchCoreInferenceEngine:
         Returns:
             Z-scoreマップ
         """
-        return (raw_score_map - self.pixel_mean) / self.pixel_std_safe
+        return (raw_score_map - self.pixel_mean) / self.pixel_std_safe  # type: ignore[no-any-return]
 
     def _generate_overlay(
         self, inputs: torch.Tensor, z_score_map: np.ndarray
@@ -304,7 +305,7 @@ class PatchCoreInferenceEngine:
         )
 
     def _result_gen(
-        self, label: LabelType, z_stats: dict, image_id: str
+        self, label: Literal["OK", "NG"], z_stats: dict, image_id: str
     ) -> PredictionResult:
         """
         推論結果を整形
@@ -319,7 +320,7 @@ class PatchCoreInferenceEngine:
         """
         return {
             "label": label,
-            "z_stats": {k: float(v) for k, v in z_stats.items()},
+            "z_stats": cast(Dict[str, float], {k: float(v) for k, v in z_stats.items()}),  # type: ignore[typeddict-item]
             "thresholds": {
                 "z_score": self.z_score_threshold,
                 "z_area": self.z_area_threshold,
@@ -370,7 +371,7 @@ class PatchCoreInferenceEngine:
         overlay = self._generate_overlay(inputs, z_score_map)
 
         # 画像ID生成とキャッシュ保存
-        label_str = "OK" if is_ok else "NG"
+        label_str: Literal["OK", "NG"] = "OK" if is_ok else "NG"
         image_id = f"{label_str}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:4]}"
         threading.Thread(
             target=self._store_image, args=(f"org_{image_id}", image_array)
@@ -393,7 +394,7 @@ class PatchCoreInferenceEngine:
 
         # 結果整形とログ
         result = self._result_gen(label_str, z_stats, image_id)
-        self._log_result(result)
+        self._log_result(cast(Dict[str, Any], result))
 
         return result
 

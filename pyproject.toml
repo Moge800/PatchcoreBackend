@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Moge800", email = ""}
+    {name = "Moge800"}
 ]
 keywords = ["patchcore", "anomaly-detection", "computer-vision", "fastapi"]
 classifiers = [
@@ -67,4 +67,9 @@ include = '\.pyi?$'
 [tool.ruff]
 line-length = 88
 target-version = "py310"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.0",
+]
 

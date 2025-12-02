@@ -80,7 +80,7 @@ class SettingsLoader:
                 return env_loader.get_cpu_optimization()
 
             # 環境変数が設定されているか確認
-            env_value = getattr(env_loader, env_key, None)
+            env_value = getattr(env_loader, env_key if env_key else "", None)
             if env_value is not None:
                 # .envファイルが実際に存在し、値が設定されている場合のみオーバーライド
                 if hasattr(env_loader, "_env_path") and env_loader._env_path.exists():
@@ -100,6 +100,8 @@ class SettingsLoader:
         settings.pyの内容が変更された場合に、変更を反映させるために使用します。
         """
         spec = importlib.util.spec_from_file_location("settings", self.settings_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"設定ファイルの読み込みに失敗しました: {self.settings_path}")
         self.module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.module)
 

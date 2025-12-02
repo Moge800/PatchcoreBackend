@@ -38,4 +38,4 @@ def is_ok_z(
         bool: 異常がなければ True（OK）、異常があれば False（NG）。
     """
 
-    return stats["area"] < z_area_threshold and stats["maxval"] < z_max_threshold
+    return bool(stats["area"] < z_area_threshold and stats["maxval"] < z_max_threshold)

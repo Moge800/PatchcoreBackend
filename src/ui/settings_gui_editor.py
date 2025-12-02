@@ -18,7 +18,7 @@ class SettingsGUIEditor:
         self.settings_path = os.path.join("settings", "models", model_name, "settings.py")
 
         # 設定値を保持する辞書
-        self.settings_vars = {}
+        self.settings_vars: dict[str, tk.StringVar | tk.BooleanVar | tk.IntVar | tk.DoubleVar] = {}
 
         # ウィンドウ設定
         self.root.title(f"設定編集 - {model_name}")
