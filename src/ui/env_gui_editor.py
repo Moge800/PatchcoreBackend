@@ -1,3 +1,10 @@
+"""環境変数GUIエディターモジュール
+
+.envファイルをGUIで編集する機能を提供します。
+プロジェクト全体の環境変数（APIポート、GPU設定、ログレベル等）を
+直感的に編集できるインターフェースを提供します。
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import os
@@ -5,7 +12,23 @@ import shutil
 
 
 class EnvGUIEditor:
-    """環境変数設定ファイル(.env)用のGUIエディタ"""
+    """環境変数ファイル(.env)用のGUIエディター
+
+    .envファイルの各環境変数をフォーム形式で編集できます。
+    ファイルが未作成の場合は.env.exampleから自動生成できます。
+
+    Attributes:
+        root: TkinterのToplevelウィンドウ
+        env_path: .envファイルのパス
+        env_example_path: .env.exampleファイルのパス
+        env_vars: 各環境変数の値を保持する辞書
+        env_configs: 環境変数の定義情報
+
+    Note:
+        - .envファイルが存在しない場合は警告が表示されます
+        - デフォルト値は.env.exampleから読み込まれます
+        - 保存時に既存の.envファイルは上書きされます
+    """
 
     def __init__(self, root: tk.Toplevel):
         self.root = root

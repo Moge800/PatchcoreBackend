@@ -1,3 +1,10 @@
+"""設定GUIエディターモジュール
+
+モデル固有のsettings.pyファイルをGUIで編集する機能を提供します。
+画像サイズ、しきい値、アフィン変換座標など、モデル固有のパラメータを
+直感的に編集できるインターフェースを提供します。
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import os
@@ -10,7 +17,23 @@ from src.config.settings_loader import SettingsLoader
 
 
 class SettingsGUIEditor:
-    """設定ファイル用のGUIエディタ"""
+    """モデル設定ファイル用のGUIエディター
+
+    settings.pyファイルの各設定項目をフォーム形式で編集できます。
+    入力値の検証、デフォルト値へのリセット、設定の保存機能を提供します。
+
+    Attributes:
+        root: TkinterのToplevelウィンドウ
+        model_name: 対象モデル名
+        settings_path: settings.pyファイルのパス
+        settings_vars: 各設定項目の値を保持する辞書
+        setting_configs: 設定項目の定義情報
+
+    Note:
+        - 画面はスクロール可能なキャンバスで構成されます
+        - 保存時に自動でバリデーションが実行されます
+        - 不正な値がある場合はエラーメッセージで通知されます
+    """
 
     def __init__(self, root: tk.Toplevel, model_name: str):
         self.root = root

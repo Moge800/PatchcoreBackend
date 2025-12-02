@@ -1,3 +1,18 @@
+"""メインGUIランチャーモジュール
+
+PatchCoreモデルの学習、推論、設定編集を行うための統合GUIを提供します。
+Tkinterを使用したグラフィカルインターフェースで、初心者でも簡単にモデル操作が可能です。
+
+主な機能:
+- モデルの選択と切り替え
+- 設定ファイルの編集（GUIまたはテキストエディタ）
+- 環境変数の編集
+- アフィン変換座標の選択
+- モデルの学習実行
+- 推論テストの実行
+- リアルタイムログ表示
+"""
+
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import subprocess
@@ -14,7 +29,19 @@ ENV_FILE_PATH = ".env"
 
 
 def read_model_name_from_env():
-    """環境変数ファイル(.env)からDEFAULT_MODEL_NAMEを読み込む"""
+    """環境変数ファイル(.env)からDEFAULT_MODEL_NAMEを読み込む
+
+    .envファイルをパースし、DEFAULT_MODEL_NAMEの値を取得します。
+    引用符を自動的に除去します。
+
+    Returns:
+        モデル名の文字列。読み込み失敗時または存在しない場合はNone。
+
+    Example:
+        >>> model_name = read_model_name_from_env()
+        >>> print(model_name)
+        'example_model'
+    """
     try:
         with open(ENV_FILE_PATH, "r", encoding="utf-8") as f:
             for line in f:
@@ -26,7 +53,21 @@ def read_model_name_from_env():
 
 
 def write_model_name_to_env(new_model_name):
-    """環境変数ファイル(.env)のDEFAULT_MODEL_NAMEを更新"""
+    """環境変数ファイル(.env)のDEFAULT_MODEL_NAMEを更新
+
+    既存のDEFAULT_MODEL_NAME行を更新、存在しない場合は追加します。
+    ファイルの他の行は保持されます。
+
+    Args:
+        new_model_name: 設定する新しいモデル名
+
+    Raises:
+        Exception: ファイルの読み書きに失敗した場合
+
+    Example:
+        >>> write_model_name_to_env("new_model")
+        # .envファイルが更新される
+    """
     try:
         with open(ENV_FILE_PATH, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -50,6 +91,24 @@ def write_model_name_to_env(new_model_name):
 
 
 class ModelLauncherGUI:
+    """モデル操作用のメインGUIクラス
+
+    PatchCoreモデルの学習、推論、設定管理を行うための統合GUIを提供します。
+    マルチスレッドで長時間処理を実行し、リアルタイムでログを表示します。
+
+    Attributes:
+        root: Tkinterのルートウィンドウ
+        model_list: 利用可能なモデルのリスト
+        selected_model: 現在選択されているモデル名
+        process: 実行中のサブプロセス
+        log_text: ログ表示用のScrolledTextウィジェット
+
+    Example:
+        >>> root = tk.Tk()
+        >>> app = ModelLauncherGUI(root)
+        >>> root.mainloop()
+    """
+
     def __init__(self, root):
         self.root = root
         self.root.title("PatchCoreモデル操作GUI")
