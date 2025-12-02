@@ -157,7 +157,7 @@ async def restart_engine(execute: bool = Query(False)) -> JSONResponse:
 
 
 @app.get("/engine/name")
-async def get_engine_name():
+async def get_engine_name() -> JSONResponse:
     return JSONResponse(content={"name": engine.get_model_name()})
 
 
@@ -165,8 +165,8 @@ async def get_engine_name():
 @engine_required
 async def get_image_list(
     limit: int = Query(100, ge=1, le=1000),
-    prefix: str = Query(None, enum=["org", "ovr"]),
-    label: str = Query(None, enum=["OK", "NG"]),
+    prefix: str | None = Query(None, enum=["org", "ovr"]),
+    label: str | None = Query(None, enum=["OK", "NG"]),
     reverse_list: bool = Query(False),
 ) -> JSONResponse:
     """
@@ -349,8 +349,8 @@ async def system_info() -> JSONResponse:
 
 
 if __name__ == "__main__":
-    DEBUG = False
-    if DEBUG:
+    # 環境変数からDEBUGフラグを取得
+    if env_loader.DEBUG:
         import uvicorn
 
         uvicorn.run(
