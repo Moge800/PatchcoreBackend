@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Query
 from fastapi.responses import JSONResponse, Response
-from typing import Callable
+from typing import Callable, Dict, Any, cast
 import numpy as np
 import cv2
 from PIL import Image
@@ -111,7 +111,7 @@ async def predict(
 
         end = time.perf_counter()
 
-        response_data = {
+        response_data: Dict[str, Any] = {
             "label": result["label"],
             "process_time": round(end - start, 2),
             "image_id": result["image_id"],
@@ -123,10 +123,11 @@ async def predict(
         else:
             response_data["thresholds"] = result["thresholds"]
             # basicモードでは必要最低限の統計のみ返す
+            z_stats_dict = cast(Dict[str, Any], result["z_stats"])
             response_data["z_stats"] = {
-                k: result["z_stats"][k]
+                k: z_stats_dict[k]
                 for k in ["area", "maxval"]
-                if k in result["z_stats"]
+                if k in z_stats_dict
             }
 
         return JSONResponse(content=response_data)
