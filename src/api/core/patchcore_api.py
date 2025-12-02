@@ -44,9 +44,9 @@ def engine_required(func: Callable) -> Callable:
                 content={"status": "error", "message": "Engine not initialized"},
             )
         if inspect.iscoroutinefunction(func):
-            return await func(*args, **kwargs)
+            return await func(*args, **kwargs)  # type: ignore[no-any-return]
         else:
-            return func(*args, **kwargs)
+            return func(*args, **kwargs)  # type: ignore[no-any-return]
 
     return async_wrapper
 
