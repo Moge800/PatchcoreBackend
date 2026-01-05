@@ -644,7 +644,7 @@ class ModelLauncherGUI:
                 self._log_message("[学習中止] ユーザーによりキャンセルされました\n\n")
                 return
 
-        script_path = os.path.join("src", "model", "pipeline", "create.py")
+        script_path = os.path.join("src", "ml_engines", "PatchCore", "pipeline", "create.py")
         self._run_script_async(script_path, settings_path)
 
     def _on_inference_button_click(self):
@@ -662,7 +662,7 @@ class ModelLauncherGUI:
                 self._log_message("[推論中止] ユーザーによりキャンセルされました\n\n")
                 return
 
-        script_path = os.path.join("src", "model", "pipeline", "inference.py")
+        script_path = os.path.join("src", "ml_engines", "PatchCore", "pipeline", "inference.py")
         self._run_script_async(script_path, settings_path)
 
     def _run_script_async(self, script_path, settings_path):
