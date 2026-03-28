@@ -21,12 +21,15 @@ PatchcoreBackend/
 │   ├── api/              # REST API
 │   │   ├── core/         # patchcore_api.py (FastAPI実装)
 │   │   ├── client/       # APIクライアント
+│   │   ├── routers/      # ルーター (images.py, jobs.py, models.py, system.py)
+│   │   ├── services/     # サービス層 (job_queue.py, model_registry.py)
 │   │   └── utils/        # APIユーティリティ
 │   ├── ml_engines/       # 機械学習エンジン
-│   │   └── PatchCore/    # PatchCore実装
-│   │       ├── core/     # inference_engine.py, inference_core.py
-│   │       ├── pipeline/ # create.py (学習), inference.py
-│   │       └── utils/    # モデルローダー、デバイス管理等
+│   │   ├── PatchCore/    # PatchCore実装
+│   │   │   ├── core/     # inference_engine.py, inference_core.py
+│   │   │   ├── pipeline/ # create.py (学習), inference.py
+│   │   │   └── utils/    # モデルローダー、デバイス管理等
+│   │   └── U-Net/        # U-Net実装 (将来拡張用)
 │   ├── ui/               # GUI (Tkinter)
 │   │   ├── main_gui_launcher.py
 │   │   ├── settings_gui_editor.py
@@ -39,7 +42,8 @@ PatchcoreBackend/
 │   ├── utils/            # 共通ユーティリティ
 │   │   └── logger.py     # 統一ロガー
 │   └── types.py          # TypedDict定義
-├── settings/             # モデル別設定
+├── settings/             # 設定ファイル
+│   ├── main_settings.py  # 共通設定
 │   └── models/
 │       └── <model_name>/
 │           └── settings.py  # モデル固有設定
