@@ -76,6 +76,9 @@ class PatchCoreInferenceEngine:
         self.model = self.model.to(self.device)
         self.pixel_std_safe = np.where(self.pixel_std == 0, 1e-6, self.pixel_std)
 
+        # PCA・メモリバンクをGPUテンソルとして事前計算
+        self._prepare_gpu_assets()
+
         self.image_store: OrderedDict[str, np.ndarray] = OrderedDict()
 
         self._warmup()
@@ -109,6 +112,29 @@ class PatchCoreInferenceEngine:
         self.use_mixed_precision = self.loader.get_variable("USE_MIXED_PRECISION")
 
         self.logger.info(f"Settings reloaded for model={self.model_name}")
+
+    def _prepare_gpu_assets(self) -> None:
+        """
+        PCA変換行列とメモリバンク平均をGPUテンソルとして事前計算
+
+        GPU上でPCA変換と距離計算を行うことで、
+        CPU↔GPU間のデータ転送とNumPy処理を削減します。
+        """
+        if self.device.type == "cuda":
+            self.pca_components_t = torch.from_numpy(
+                self.pca.components_.T.astype(np.float32)
+            ).to(self.device)
+            self.pca_mean_t = torch.from_numpy(self.pca.mean_.astype(np.float32)).to(
+                self.device
+            )
+            self.bank_mean_t = torch.from_numpy(
+                self.memory_bank.mean(axis=0).astype(np.float32)
+            ).to(self.device)
+            self.logger.info("GPU assets prepared (PCA components, memory bank mean)")
+        else:
+            self.pca_components_t = None
+            self.pca_mean_t = None
+            self.bank_mean_t = None
 
     def _warmup(self) -> None:
         """
@@ -231,10 +257,19 @@ class PatchCoreInferenceEngine:
                 fmap = self.model(inputs)
 
             patches = fmap.squeeze(0).permute(1, 2, 0).reshape(-1, fmap.size(1))
-            patches = patches.cpu().numpy()  # CPUに戻す
-            patches = self.pca.transform(patches)
-            scores = np.linalg.norm(patches - self.memory_bank.mean(axis=0), axis=1)
-            return scores.reshape(fmap.shape[2], fmap.shape[3])  # type: ignore[no-any-return]
+
+            if self.pca_components_t is not None:
+                # GPU上でPCA変換と距離計算を実行
+                patches = patches.float()
+                patches_pca = (patches - self.pca_mean_t) @ self.pca_components_t
+                scores = torch.norm(patches_pca - self.bank_mean_t, dim=1)
+                return scores.reshape(fmap.shape[2], fmap.shape[3]).cpu().numpy()  # type: ignore[no-any-return]
+            else:
+                # CPU fallback
+                patches = patches.cpu().numpy()
+                patches = self.pca.transform(patches)
+                scores = np.linalg.norm(patches - self.memory_bank.mean(axis=0), axis=1)
+                return scores.reshape(fmap.shape[2], fmap.shape[3])  # type: ignore[no-any-return]
 
     def _resize_score_map(self, score_map: np.ndarray) -> np.ndarray:
         """
@@ -300,6 +335,7 @@ class PatchCoreInferenceEngine:
             整形された推論結果
         """
         from src.types import ZScoreStats, Thresholds, ImageIds
+
         z_stats_typed: ZScoreStats = {
             "area": float(z_stats["area"]),
             "maxval": float(z_stats["maxval"]),

@@ -8,7 +8,11 @@ from src.config import env_loader
 import logging
 from src.ml_engines.PatchCore.utils.inference_utils import save_overlay_image
 from src.ml_engines.PatchCore.utils.model_loader import load_model_and_assets
-from src.ml_engines.PatchCore.core.inference_core import run_inference_on_image
+from src.ml_engines.PatchCore.core.inference_core import (
+    run_inference_on_image,
+    GpuAssets,
+)
+from src.ml_engines.PatchCore.utils.device_utils import get_device
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -36,6 +40,14 @@ def run_inference():
         MODEL_DIR, SAVE_FORMAT
     )
 
+    # GPUデバイス設定
+    use_gpu = loader.get_variable("USE_GPU")
+    device_id = loader.get_variable("GPU_DEVICE_ID")
+    device = get_device(use_gpu, device_id)
+    model = model.to(device)
+    gpu_assets = GpuAssets(pca, memory_bank, device) if device.type == "cuda" else None
+    logging.info(f"Device: {device}")
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     img_save_dir = os.path.join(SETTINGS_DIR, "execute", "test", timestamp)
     os.makedirs(img_save_dir, exist_ok=True)
@@ -54,6 +66,8 @@ def run_inference():
             Z_SCORE_THRESHOLD,
             Z_AREA_THRESHOLD,
             Z_MAX_THRESHOLD,
+            device=device,
+            gpu_assets=gpu_assets,
         )
 
         label = "OK" if is_ok else "NG"

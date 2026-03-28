@@ -26,8 +26,6 @@ dependencies = [
     "numpy>=2.2.6",
     "opencv-python>=4.12.0.88",
     "pillow>=11.3.0",
-    "torch>=2.8.0",
-    "torchvision>=0.23.0",
     "scikit-learn>=1.7.2",
     "pydantic>=2.12.0",
     "requests>=2.32.5",
@@ -35,6 +33,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+gpu = [
+    "torch>=2.8.0",
+    "torchvision>=0.23.0",
+]
+cpu = [
+    "torch>=2.8.0",
+    "torchvision>=0.23.0",
+]
 dev = [
     "mypy>=1.0.0",
     "pytest>=7.0.0",
@@ -76,5 +82,33 @@ dev = [
     "pytest-cov>=4.0.0",
     "ruff>=0.14.7",
     "ty>=0.0.26",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv]
+conflicts = [
+    [
+        { extra = "gpu" },
+        { extra = "cpu" },
+    ],
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu126", extra = "gpu" },
+    { index = "pytorch-cpu", extra = "cpu" },
+]
+torchvision = [
+    { index = "pytorch-cu126", extra = "gpu" },
+    { index = "pytorch-cpu", extra = "cpu" },
 ]
 
