@@ -424,3 +424,12 @@ GPU・CUDA 情報を返す。GPU なし環境では `cuda_available: false`。
 | 409 | 競合（例: 既にロード済み）|
 | 500 | サーバー内部エラー |
 | 503 | モデルが未ロード |
+
+---
+
+## 📚 関連ドキュメント
+
+- [INDEX.md](INDEX.md) - ドキュメント一覧
+- [SERVER_GUIDE.md](SERVER_GUIDE.md) - サーバー操作の実践ガイド
+- [API_SETTINGS.md](API_SETTINGS.md) - サーバー/クライアントの接続設定
+- [SECURITY.md](SECURITY.md) - 本番環境のセキュリティ推奨事項

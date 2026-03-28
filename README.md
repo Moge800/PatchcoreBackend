@@ -61,6 +61,19 @@ Copy-Item .env.example .env
 
 詳細は [環境変数ガイド](docs/ENV_GUIDE.md) と [設定ガイド](docs/SETTINGS_GUIDE.md) を参照してください。
 
+## 📖 ドキュメント
+
+全ドキュメントの一覧は [docs/INDEX.md](docs/INDEX.md) を参照してください。
+
+| ドキュメント | 概要 |
+|---|---|
+| [サーバーガイド](docs/SERVER_GUIDE.md) | 起動・停止・推論フロー・トラブルシューティング |
+| [GUI ガイド](docs/GUI_GUIDE.md) | GUI の操作方法 |
+| [API リファレンス](docs/API.md) | REST API エンドポイント仕様 |
+| [設定ガイド](docs/SETTINGS_GUIDE.md) | settings.py と .env の役割分担 |
+| [環境変数ガイド](docs/ENV_GUIDE.md) | 全環境変数リファレンス |
+| [セキュリティ](docs/SECURITY.md) | 本番環境向け推奨事項 |
+
 ## 📂 プロジェクト構造
 
 ```
@@ -68,20 +81,23 @@ PatchcoreBackend/
 ├── src/
 │   ├── api/              # REST API
 │   │   ├── core/         # API実装
+│   │   ├── routers/      # エンドポイントルーター
+│   │   ├── services/     # サービス層
 │   │   ├── client/       # APIクライアント
 │   │   └── utils/        # APIユーティリティ
-│   ├── model/            # モデル関連
-│   │   ├── core/         # 推論エンジン
-│   │   ├── pipeline/     # 学習・推論パイプライン
-│   │   └── utils/        # モデルユーティリティ
+│   ├── ml_engines/       # 機械学習エンジン
+│   │   ├── PatchCore/    # PatchCore実装
+│   │   └── U-Net/        # U-Net（将来拡張用）
 │   ├── ui/               # GUI
 │   ├── config/           # 設定管理
 │   └── utils/            # 共通ユーティリティ
+├── scripts/              # 起動・診断スクリプト
 ├── tests/                # テストスクリプト
 ├── datasets/             # 学習データ
 ├── models/               # 保存済みモデル
-└── settings/             # 設定ファイル
-    └── models/           # モデル別設定
+├── settings/             # 設定ファイル
+│   └── models/           # モデル別設定
+└── docs/                 # ドキュメント
 ```
 
 ## 🎯 クイックスタート
@@ -90,13 +106,19 @@ PatchcoreBackend/
 
 ```bash
 # GUIから実行
-python model_create_gui.py
+python main_gui_launch.py
 
 # またはコマンドラインから
-python src/model/pipeline/create.py
+python src/ml_engines/PatchCore/pipeline/create.py
 ```
 
 ### 2. APIサーバーの起動
+
+```bash
+# スクリプトで起動（推奨）
+.\scripts\server_launch.ps1
+
+# または直接起動
 
 ```bash
 uvicorn src.api.core.patchcore_api:app --host 0.0.0.0 --port 8000
@@ -108,7 +130,7 @@ uvicorn src.api.core.patchcore_api:app --host 0.0.0.0 --port 8000
 
 ```python
 from src.api.client.patchcore_api_client import PatchCoreApiClient
-from src.model.utils.inference_utils import load_image_unicode_path
+from src.ml_engines.PatchCore.utils.inference_utils import load_image_unicode_path
 
 client = PatchCoreApiClient()
 image = load_image_unicode_path("test.png")

@@ -1,5 +1,7 @@
 # GUI機能強化の提案
 
+> **📌 ドキュメントの位置づけ**: これは機能拡張の**提案書**です。Phase 1 の設定検証機能は [VALIDATION_FEATURE.md](VALIDATION_FEATURE.md) として実装済みです。Phase 2 以降は未実装です。
+
 ## 現状の問題点
 
 現在のGUIは`settings.py`の編集と検証のみをサポートしており、`.env`ファイルの環境変数設定には対応していません。
@@ -248,3 +250,11 @@ def _on_validate_settings_click(self):
 - 実装コストを抑えつつ
 - ユーザーは設定の関係性を理解でき
 - 必要に応じてPhase 2以降を検討できる
+
+---
+
+## 📚 関連ドキュメント
+
+- [INDEX.md](INDEX.md) - ドキュメント一覧
+- [VALIDATION_FEATURE.md](VALIDATION_FEATURE.md) - Phase 1 設定検証機能の実装レポート
+- [GUI_GUIDE.md](GUI_GUIDE.md) - GUI 操作ガイド

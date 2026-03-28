@@ -128,6 +128,7 @@ client = PatchCoreApiClient(base_url="http://192.168.1.100:8000")
 
 ### 📚 関連ドキュメント
 
+- [INDEX.md](INDEX.md) - ドキュメント一覧
 - [ENV_GUIDE.md](ENV_GUIDE.md) - 環境変数の詳細
 - [SETTINGS_GUIDE.md](SETTINGS_GUIDE.md) - 設定管理の全体像
 - [API.md](API.md) - API仕様

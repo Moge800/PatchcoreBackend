@@ -192,3 +192,11 @@ SettingsLoaderを通じて以下の設定が環境変数でオーバーライド
 - `PCA_VARIANCE`
 - `ENABLE_AUGMENT`
 - `CPU_OPTIMIZATION`
+
+---
+
+## 📚 関連ドキュメント
+
+- [INDEX.md](INDEX.md) - ドキュメント一覧
+- [SETTINGS_GUIDE.md](SETTINGS_GUIDE.md) - settings.py と .env の役割分担
+- [API_SETTINGS.md](API_SETTINGS.md) - サーバー/クライアントの HOST/PORT 設定

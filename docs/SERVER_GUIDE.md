@@ -487,3 +487,12 @@ Get-Content logs/api/patchcore_api.log -Wait
 # Linux / Mac
 tail -f logs/api/patchcore_api.log
 ```
+
+---
+
+## 📚 関連ドキュメント
+
+- [INDEX.md](INDEX.md) - ドキュメント一覧
+- [API.md](API.md) - REST API エンドポイント仕様
+- [ENV_GUIDE.md](ENV_GUIDE.md) - 環境変数の設定リファレンス
+- [SETTINGS_GUIDE.md](SETTINGS_GUIDE.md) - 設定管理の全体像
