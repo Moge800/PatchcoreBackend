@@ -42,7 +42,7 @@ class EnvGUIEditor:
         # ウィンドウ設定
         self.root.title("環境変数設定編集")
         self.root.geometry("550x800")
-        self.root.resizable(False, True)
+        self.root.resizable(True, True)
 
         # 環境変数項目の定義
         self._define_env_configs()
@@ -270,13 +270,6 @@ class EnvGUIEditor:
         )
         title_label.pack(pady=(0, 20))
 
-        # .envファイル状態表示
-        self.status_label = tk.Label(
-            scrollable_frame, text="", font=("Arial", 10), fg="blue"
-        )
-        self.status_label.pack(pady=(0, 10))
-        self._update_status_label()
-
         # 設定項目のフレーム
         self.settings_frame = ttk.Frame(scrollable_frame)
         self.settings_frame.pack(fill=tk.BOTH, expand=True)
@@ -302,11 +295,21 @@ class EnvGUIEditor:
             side=tk.LEFT, padx=(0, 10)
         )
         ttk.Button(
-            button_frame, text="保存", command=self._save_env, style="Accent.TButton"
+            button_frame, text="保存 (Ctrl+S)", command=self._save_env, style="Accent.TButton"
         ).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(button_frame, text="キャンセル", command=self.root.destroy).pack(
+        ttk.Button(button_frame, text="閉じる", command=self.root.destroy).pack(
             side=tk.RIGHT
         )
+
+        # ステータスラベル
+        self.status_label = tk.Label(
+            scrollable_frame,
+            text="",
+            font=("Arial", 9),
+            fg="green",
+            anchor="w",
+        )
+        self.status_label.pack(fill=tk.X, padx=5, pady=(4, 0))
 
         # レイアウト配置
         canvas.pack(side="left", fill="both", expand=True)
@@ -314,6 +317,9 @@ class EnvGUIEditor:
 
         # マウスホイール対応
         self._bind_mousewheel(canvas)
+
+        # キーボードショートカット
+        self.root.bind("<Control-s>", lambda _: self._save_env())
 
     def _bind_mousewheel(self, canvas):
         """マウスホイールでスクロール"""
@@ -420,6 +426,10 @@ class EnvGUIEditor:
 
             row += 1
 
+    def _set_status(self, message: str, ok: bool = True):
+        """ステータスラベルを更新"""
+        self.status_label.config(text=message, fg="green" if ok else "#b00000")
+
     def _update_status_label(self):
         """ファイル状態ラベルを更新"""
         if os.path.exists(self.env_path):
@@ -495,7 +505,7 @@ class EnvGUIEditor:
                     # 値が存在しない場合はデフォルト値を使用
                     self._set_default_value(env_name, var)
 
-            messagebox.showinfo("完了", "環境変数を読み込みました")
+            self._set_status("環境変数を読み込みました", ok=True)
 
         except Exception as e:
             messagebox.showerror("エラー", f"環境変数の読み込みに失敗しました: {e}")
@@ -511,9 +521,7 @@ class EnvGUIEditor:
         if messagebox.askyesno("確認", "すべての環境変数をデフォルト値に戻しますか？"):
             for env_name, var in self.env_vars.items():
                 self._set_default_value(env_name, var)
-            messagebox.showinfo(
-                "完了", "すべての環境変数をデフォルト値にリセットしました"
-            )
+            self._set_status("すべての環境変数をデフォルト値にリセットしました", ok=True)
 
     def _validate_env(self):
         """環境変数値を検証"""
@@ -549,9 +557,10 @@ class EnvGUIEditor:
             messagebox.showerror(
                 "検証エラー", "以下のエラーがあります:\n\n" + "\n".join(errors)
             )
+            self._set_status(f"検証エラー: {len(errors)}件", ok=False)
             return False
         else:
-            messagebox.showinfo("検証成功", "すべての環境変数値が正常です")
+            self._set_status("✓ すべての環境変数値が正常です", ok=True)
             return True
 
     def _save_env(self):
@@ -596,11 +605,7 @@ class EnvGUIEditor:
                 f.write("\n".join(lines))
 
             self._update_status_label()
-            messagebox.showinfo(
-                "保存完了",
-                "環境変数を保存しました\n\n変更を反映するにはアプリケーションの再起動が必要です",
-            )
-            self.root.destroy()
+            self._set_status("✓ 環境変数を保存しました（反映にはアプリ再起動が必要です）", ok=True)
 
         except Exception as e:
             messagebox.showerror("保存エラー", f"環境変数の保存に失敗しました: {e}")
