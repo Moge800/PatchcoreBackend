@@ -433,7 +433,8 @@ class ModelLauncherGUI:
                 "変更を反映するには:\n"
                 "1. ファイルを保存\n"
                 "2. アプリケーションを再起動\n"
-                "3. APIサーバーは /restart_engine で再起動",
+                "3. APIサーバーはモデルをアンロード→再ロードして反映\n"
+                "   (POST /models/{model_name}/unload → POST /models/{model_name}/load)",
             )
         except Exception as e:
             self._log_message(f"[エラー] .env編集失敗: {e}\n")

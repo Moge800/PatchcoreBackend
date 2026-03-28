@@ -163,6 +163,11 @@ API_WORKERS: int = env_loader.get("API_WORKERS", 1, int)
 
 # ===== モデル設定 =====
 DEFAULT_MODEL_NAME: str = env_loader.get("DEFAULT_MODEL_NAME", "example_model")
+# 起動時にロードするモデル名（カンマ区切り）例: "model_a,model_b"
+LOADED_MODELS: str = env_loader.get("LOADED_MODELS", "")
+
+# ===== ジョブキュー設定 =====
+JOB_QUEUE_TTL: int = env_loader.get("JOB_QUEUE_TTL", 3600, int)
 
 # ===== ログ設定 =====
 LOG_LEVEL: str = env_loader.get("LOG_LEVEL", "INFO")

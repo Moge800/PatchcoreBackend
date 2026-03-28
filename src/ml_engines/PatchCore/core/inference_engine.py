@@ -2,8 +2,7 @@
 推論エンジンモジュール
 
 PatchCore モデルを使用した異常検出推論を実行します。
-シングルトンパターンでインスタンスを管理し、画像のキャッシュ、GPU最適化、
-非同期NG画像保存などの機能を提供します。
+画像のキャッシュ、GPU最適化、非同期NG画像保存などの機能を提供します。
 """
 
 import os
@@ -29,7 +28,6 @@ class PatchCoreInferenceEngine:
     """
     PatchCore 異常検出推論エンジン
 
-    シングルトンパターンで実装され、モデルごとに1つのインスタンスのみが存在します。
     画像の前処理、推論、後処理、結果の可視化を行います。
 
     Attributes:
@@ -40,16 +38,6 @@ class PatchCoreInferenceEngine:
         image_store: 画像キャッシュ（OrderedDict）
     """
 
-    _instance = None
-    _initialized: bool
-
-    def __new__(cls, *args, **kwargs):
-        """シングルトンインスタンスを返す"""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized: bool = False
-        return cls._instance
-
     def __init__(self, model_name: str) -> None:
         """
         推論エンジンを初期化
@@ -59,14 +47,7 @@ class PatchCoreInferenceEngine:
 
         Args:
             model_name: 使用するモデルの名前（modelsディレクトリ内のフォルダ名）
-
-        Note:
-            シングルトンパターンのため、同じmodel_nameで複数回呼ばれても
-            最初の初期化のみが実行されます。
         """
-        if self._initialized:
-            return
-        self._initialized = True
 
         # ロガー初期化
         self.logger = setup_logger(
