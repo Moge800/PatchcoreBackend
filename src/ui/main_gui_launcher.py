@@ -128,6 +128,7 @@ class ModelLauncherGUI:
             value=self.model_dirs[0] if self.has_models else ""
         )
         self.current_model_name = read_model_name_from_env()  # .envから読み込み
+        self._running_process: subprocess.Popen | None = None  # 実行中プロセス
 
         self._setup_widgets()
         self._update_button_states()
@@ -137,12 +138,22 @@ class ModelLauncherGUI:
         header_frame = ttk.Frame(self.root)
         header_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        self.model_label = tk.Label(
+        # 確定済みモデル名と選択中モデル名を分けて表示
+        self.confirmed_model_label = tk.Label(
             header_frame,
-            text=f"現在モデル名: {self.selected_model.get()}",
-            font=("Arial", 14, "bold"),
+            text=f"確定済みモデル: {self.current_model_name or '(未設定)'}",
+            font=("Arial", 13, "bold"),
+            fg="#1a6b1a",
         )
-        self.model_label.pack(pady=(0, 10))
+        self.confirmed_model_label.pack(pady=(0, 4))
+
+        self.pending_model_label = tk.Label(
+            header_frame,
+            text="",
+            font=("Arial", 10),
+            fg="#b85c00",
+        )
+        self.pending_model_label.pack(pady=(0, 4))
 
         dropdown_frame = ttk.Frame(header_frame)
         dropdown_frame.pack(pady=5)
@@ -179,6 +190,20 @@ class ModelLauncherGUI:
             log_frame, width=80, height=12, font=("Consolas", 9)
         )
         self.log_text.pack(fill=tk.BOTH, expand=True)
+
+        # ログ操作ボタン
+        log_button_frame = ttk.Frame(log_frame)
+        log_button_frame.pack(fill=tk.X, pady=(4, 0))
+
+        tk.Button(
+            log_button_frame,
+            text="🗑 ログクリア",
+            font=("Arial", 9),
+            command=self._clear_log,
+            relief=tk.FLAT,
+            bd=0,
+            fg="#555",
+        ).pack(side=tk.RIGHT)
 
         # ボタンエリアのメインフレーム
         button_main_frame = ttk.Frame(self.root)
@@ -295,6 +320,28 @@ class ModelLauncherGUI:
         )
         self.inference_button.pack(side=tk.LEFT, pady=5, padx=10)
 
+        self.stop_button = tk.Button(
+            execution_button_frame,
+            text="⏹ 停止",
+            font=("Arial", 12, "bold"),
+            width=10,
+            command=self._on_stop_button_click,
+            bg="#f5f5f5",
+            fg="#555",
+            relief=tk.RAISED,
+            state=tk.DISABLED,
+        )
+        self.stop_button.pack(side=tk.LEFT, pady=5, padx=10)
+
+        # ステータスラベル
+        self.status_label = tk.Label(
+            execution_frame,
+            text="⬜ 待機中",
+            font=("Arial", 10),
+            fg="#555",
+        )
+        self.status_label.pack(pady=(0, 4))
+
         self.control_widgets = [
             self.edit_button,
             self.edit_file_button,
@@ -308,7 +355,13 @@ class ModelLauncherGUI:
         ]
 
     def _on_model_select(self, event):
-        self.model_label.config(text=f"現在モデル名: {self.selected_model.get()}")
+        selected = self.selected_model.get()
+        if selected != self.current_model_name:
+            self.pending_model_label.config(
+                text=f"⚠ 選択中: {selected}（「確定」ボタンを押すと操作が有効になります）"
+            )
+        else:
+            self.pending_model_label.config(text="")
         self._update_button_states()
 
     def _on_confirm_model(self):
@@ -318,7 +371,8 @@ class ModelLauncherGUI:
             write_model_name_to_env(new_model)
             self.current_model_name = new_model
             self._update_button_states()
-            self.model_label.config(text=f"現在モデル名: {new_model}")
+            self.confirmed_model_label.config(text=f"確定済みモデル: {new_model}")
+            self.pending_model_label.config(text="")
             self._log_message(
                 f'[モデル確定] .env の DEFAULT_MODEL_NAME を "{new_model}" に更新しました\n'
             )
@@ -333,6 +387,10 @@ class ModelLauncherGUI:
         match = self.selected_model.get() == self.current_model_name
         for widget in self.control_widgets:
             widget.config(state=tk.NORMAL if match else tk.DISABLED)
+
+    def _clear_log(self):
+        """ログエリアをクリア"""
+        self.log_text.delete("1.0", tk.END)
 
     def _log_message(self, message):
         """スレッドセーフなログ出力"""
@@ -352,6 +410,16 @@ class ModelLauncherGUI:
         def update():
             for widget in self.control_widgets:
                 widget.config(state=state)
+
+        self.root.after(0, update)
+
+    def _set_status(self, text: str, running: bool = False):
+        """ステータスラベルをスレッドセーフに更新"""
+
+        def update():
+            icon = "🟡" if running else "⬜"
+            self.status_label.config(text=f"{icon} {text}", fg="#c75000" if running else "#555")
+            self.stop_button.config(state=tk.NORMAL if running else tk.DISABLED)
 
         self.root.after(0, update)
 
@@ -666,10 +734,25 @@ class ModelLauncherGUI:
         script_path = os.path.join("src", "ml_engines", "PatchCore", "pipeline", "inference.py")
         self._run_script_async(script_path, settings_path)
 
+    def _on_stop_button_click(self):
+        """実行中のプロセスを停止する"""
+        if self._running_process and self._running_process.poll() is None:
+            self._running_process.terminate()
+            self._log_message("[停止要求] プロセスに停止シグナルを送信しました\n")
+            try:
+                self._running_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self._running_process.kill()
+                self._log_message("[停止] プロセスを強制終了しました\n")
+        else:
+            self._log_message("[停止] 実行中のプロセスはありません\n")
+
     def _run_script_async(self, script_path, settings_path):
         def task():
             # ボタンを無効化（メインスレッドで実行）
             self._update_widgets_state(tk.DISABLED)
+            script_name = os.path.basename(script_path)
+            self._set_status(f"{script_name} 実行中...", running=True)
 
             self._log_message(f"[実行開始] {script_path}\n")
             self._log_message(f"使用設定: {settings_path}\n")
@@ -683,23 +766,40 @@ class ModelLauncherGUI:
                     encoding="utf-8",
                     cwd=os.path.abspath("."),
                 )
+                self._running_process = process
                 if process.stdout:
                     for line in process.stdout:
                         self._log_message(line)
 
                 process.wait()
-                self._log_message("[実行完了]\n\n")
+                if process.returncode == 0:
+                    self._log_message("[実行完了]\n\n")
+                else:
+                    self._log_message(f"[終了] 終了コード: {process.returncode}\n\n")
 
             except Exception as e:
                 self._log_message(f"[エラー] {e}\n")
 
             finally:
+                self._running_process = None
+                self._set_status("待機中", running=False)
                 # ボタン状態を復元（メインスレッドで実行）
                 self.root.after(0, self._update_button_states)
 
         threading.Thread(target=task, daemon=True).start()
 
     def on_close(self):
+        if self._running_process and self._running_process.poll() is None:
+            if not messagebox.askyesno(
+                "プロセス実行中",
+                "プロセスが実行中です。終了してもよいですか？",
+            ):
+                return
+            self._running_process.terminate()
+            try:
+                self._running_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self._running_process.kill()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = os.path.join("settings", "gui_log", f"{timestamp}.log")
         os.makedirs(os.path.dirname(log_path), exist_ok=True)

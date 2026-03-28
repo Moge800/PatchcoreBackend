@@ -215,13 +215,23 @@ class SettingsGUIEditor:
         )
         ttk.Button(
             button_frame,
-            text="保存",
+            text="保存 (Ctrl+S)",
             command=self._save_settings,
             style="Accent.TButton",
         ).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(button_frame, text="キャンセル", command=self.root.destroy).pack(
+        ttk.Button(button_frame, text="閉じる", command=self.root.destroy).pack(
             side=tk.RIGHT
         )
+
+        # ステータスラベル
+        self.status_label = tk.Label(
+            scrollable_frame,
+            text="",
+            font=("Arial", 9),
+            fg="green",
+            anchor="w",
+        )
+        self.status_label.pack(fill=tk.X, padx=5, pady=(4, 0))
 
         # レイアウト配置
         canvas.pack(side="left", fill="both", expand=True)
@@ -229,6 +239,9 @@ class SettingsGUIEditor:
 
         # マウスホイール対応
         self._bind_mousewheel(canvas)
+
+        # キーボードショートカット
+        self.root.bind("<Control-s>", lambda _: self._save_settings())
 
     def _bind_mousewheel(self, canvas):
         """マウスホイールでスクロール"""
@@ -394,7 +407,7 @@ class SettingsGUIEditor:
                     # デフォルト値を設定
                     self._set_default_value(setting_name, var)
 
-            messagebox.showinfo("完了", "設定を読み込みました")
+            self._set_status("設定を読み込みました", ok=True)
 
         except Exception as e:
             messagebox.showerror("エラー", f"設定の読み込みに失敗しました: {e}")
@@ -410,12 +423,16 @@ class SettingsGUIEditor:
         else:
             var.set(default)
 
+    def _set_status(self, message: str, ok: bool = True):
+        """ステータスラベルを更新"""
+        self.status_label.config(text=message, fg="green" if ok else "#b00000")
+
     def _reset_to_defaults(self):
         """すべての設定をデフォルト値に戻す"""
         if messagebox.askyesno("確認", "すべての設定をデフォルト値に戻しますか？"):
             for setting_name, var in self.settings_vars.items():
                 self._set_default_value(setting_name, var)
-            messagebox.showinfo("完了", "すべての設定をデフォルト値にリセットしました")
+            self._set_status("すべての設定をデフォルト値にリセットしました", ok=True)
 
     def _validate_settings(self):
         """設定値を検証"""
@@ -462,9 +479,10 @@ class SettingsGUIEditor:
             messagebox.showerror(
                 "検証エラー", "以下のエラーがあります:\n\n" + "\n".join(errors)
             )
+            self._set_status(f"検証エラー: {len(errors)}件", ok=False)
             return False
         else:
-            messagebox.showinfo("検証成功", "すべての設定値が正常です")
+            self._set_status("✓ すべての設定値が正常です", ok=True)
             return True
 
     def _save_settings(self):
@@ -511,11 +529,11 @@ class SettingsGUIEditor:
             with open(self.settings_path, "w", encoding="utf-8") as f:
                 f.write(content)
 
-            messagebox.showinfo("保存完了", "設定を保存しました")
-            self.root.destroy()
+            self._set_status("✓ 設定を保存しました", ok=True)
 
         except Exception as e:
             messagebox.showerror("保存エラー", f"設定の保存に失敗しました: {e}")
+            self._set_status(f"保存に失敗しました: {e}", ok=False)
 
 
 def open_settings_editor(model_name: str):
