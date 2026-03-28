@@ -683,8 +683,9 @@ class ModelLauncherGUI:
                     encoding="utf-8",
                     cwd=os.path.abspath("."),
                 )
-                for line in process.stdout:
-                    self._log_message(line)
+                if process.stdout:
+                    for line in process.stdout:
+                        self._log_message(line)
 
                 process.wait()
                 self._log_message("[実行完了]\n\n")

@@ -9,6 +9,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 import shutil
+from typing import cast
 
 
 class EnvGUIEditor:
@@ -482,11 +483,11 @@ class EnvGUIEditor:
 
                     try:
                         if config["type"] == "boolean":
-                            var.set(value.lower() in ("true", "1", "yes"))
+                            cast(tk.BooleanVar, var).set(value.lower() in ("true", "1", "yes"))
                         elif config["type"] in ["choice", "string"]:
-                            var.set(value)
+                            cast(tk.StringVar, var).set(value)
                         elif config["type"] == "int":
-                            var.set(int(value))
+                            cast(tk.IntVar, var).set(int(value))
                     except ValueError:
                         # 変換失敗時はデフォルト値を使用
                         self._set_default_value(env_name, var)
@@ -523,9 +524,9 @@ class EnvGUIEditor:
 
             try:
                 if config["type"] == "int":
-                    value = var.get()
-                    min_val = config.get("min")
-                    max_val = config.get("max")
+                    value: int = cast(tk.IntVar, var).get()
+                    min_val: int | None = cast("int | None", config.get("min"))
+                    max_val: int | None = cast("int | None", config.get("max"))
 
                     if min_val is not None and value < min_val:
                         errors.append(
@@ -537,8 +538,8 @@ class EnvGUIEditor:
                         )
 
                 elif config["type"] == "string":
-                    value = var.get().strip()
-                    if not value:
+                    value_s = cast(tk.StringVar, var).get().strip()
+                    if not value_s:
                         errors.append(f"{config['label']}: 空文字は指定できません")
 
             except Exception as e:

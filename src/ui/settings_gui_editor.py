@@ -10,6 +10,7 @@ from tkinter import ttk, messagebox
 import os
 import re
 import sys
+from typing import Any, cast
 
 # パスを追加してsrcモジュールをインポート可能にする
 sys.path.insert(0, os.path.abspath("."))
@@ -42,10 +43,8 @@ class SettingsGUIEditor:
             "settings", "models", model_name, "settings.py"
         )
 
-        # 設定値を保持する辞書
-        self.settings_vars: dict[
-            str, tk.StringVar | tk.BooleanVar | tk.IntVar | tk.DoubleVar
-        ] = {}
+        # 設定値を保持する辞書（値の型は config["type"] に依存するため Any）
+        self.settings_vars: dict[str, Any] = {}
 
         # ウィンドウ設定
         self.root.title(f"設定編集 - {model_name}")
@@ -246,7 +245,7 @@ class SettingsGUIEditor:
         for setting_name, config in self.setting_configs.items():
             # ラベルフレーム
             frame = ttk.LabelFrame(
-                self.settings_frame, text=config["label"], padding=(10, 5)
+                self.settings_frame, text=str(config["label"]), padding=(10, 5)
             )
             frame.grid(row=row, column=0, sticky="ew", padx=5, pady=5)
             self.settings_frame.grid_columnconfigure(0, weight=1)
@@ -254,7 +253,7 @@ class SettingsGUIEditor:
             # 説明ラベル
             desc_label = tk.Label(
                 frame,
-                text=config["description"],
+                text=str(config["description"]),
                 font=("Arial", 9),
                 fg="gray",
                 wraplength=400,
@@ -267,30 +266,31 @@ class SettingsGUIEditor:
             widget_frame.pack(fill=tk.X)
 
             if config["type"] == "boolean":
-                var = tk.BooleanVar(value=config["default"])
+                var = tk.BooleanVar(value=bool(config["default"]))
                 widget = ttk.Checkbutton(widget_frame, variable=var)
                 widget.pack(anchor="w")
 
             elif config["type"] == "choice":
                 var = tk.StringVar(value=str(config["default"]))
+                choices = cast(list[Any], config["choices"])
                 widget = ttk.Combobox(
                     widget_frame,
                     textvariable=var,
-                    values=[str(choice) for choice in config["choices"]],
+                    values=[str(c) for c in choices],
                     state="readonly",
                     width=20,
                 )
                 widget.pack(anchor="w")
 
             elif config["type"] == "int":
-                var = tk.IntVar(value=config["default"])
+                var = tk.IntVar(value=int(cast(int, config["default"])))
                 widget_container = ttk.Frame(widget_frame)
                 widget_container.pack(anchor="w")
 
                 widget = tk.Spinbox(
                     widget_container,
-                    from_=config.get("min", 0),
-                    to=config.get("max", 999999),
+                    from_=cast(int, config.get("min", 0)),
+                    to=cast(int, config.get("max", 999999)),
                     textvariable=var,
                     width=15,
                 )
@@ -306,15 +306,15 @@ class SettingsGUIEditor:
                     range_label.pack(side=tk.LEFT, padx=(5, 0))
 
             elif config["type"] == "float":
-                var = tk.DoubleVar(value=config["default"])
+                var = tk.DoubleVar(value=float(cast(float, config["default"])))
                 widget_container = ttk.Frame(widget_frame)
                 widget_container.pack(anchor="w")
 
-                step = config.get("step", 0.1)
+                step = cast(float, config.get("step", 0.1))
                 widget = tk.Spinbox(
                     widget_container,
-                    from_=config.get("min", 0.0),
-                    to=config.get("max", 999.0),
+                    from_=cast(float, config.get("min", 0.0)),
+                    to=cast(float, config.get("max", 999.0)),
                     increment=step,
                     textvariable=var,
                     width=15,
@@ -332,14 +332,13 @@ class SettingsGUIEditor:
                     range_label.pack(side=tk.LEFT, padx=(5, 0))
 
             elif config["type"] == "string":
-                var = tk.StringVar(value=config["default"])
+                var = tk.StringVar(value=str(config["default"]))
                 widget = ttk.Entry(widget_frame, textvariable=var, width=30)
                 widget.pack(anchor="w")
 
             elif config["type"] == "tuple_int":
-                var = tk.StringVar(
-                    value=f"{config['default'][0]}, {config['default'][1]}"
-                )
+                default_tuple = cast(tuple[int, int], config["default"])
+                var = tk.StringVar(value=f"{default_tuple[0]}, {default_tuple[1]}")
                 widget_container = ttk.Frame(widget_frame)
                 widget_container.pack(anchor="w")
 
@@ -406,7 +405,8 @@ class SettingsGUIEditor:
         default = config["default"]
 
         if config["type"] == "tuple_int":
-            var.set(f"{default[0]}, {default[1]}")
+            t = cast(tuple[int, int], default)
+            var.set(f"{t[0]}, {t[1]}")
         else:
             var.set(default)
 
@@ -426,7 +426,7 @@ class SettingsGUIEditor:
 
             try:
                 if config["type"] == "tuple_int":
-                    value_str = var.get().strip()
+                    value_str = str(var.get()).strip()
                     if not re.match(r"^\s*\d+\s*,\s*\d+\s*$", value_str):
                         errors.append(
                             f"{config['label']}: 正しい形式で入力してください (例: 224, 224)"
@@ -437,9 +437,9 @@ class SettingsGUIEditor:
                         errors.append(f"{config['label']}: 正の整数を指定してください")
 
                 elif config["type"] in ["int", "float"]:
-                    value = var.get()
-                    min_val = config.get("min")
-                    max_val = config.get("max")
+                    value: int | float = var.get()
+                    min_val: int | float | None = cast("int | float | None", config.get("min"))
+                    max_val: int | float | None = cast("int | float | None", config.get("max"))
 
                     if min_val is not None and value < min_val:
                         errors.append(
@@ -451,8 +451,8 @@ class SettingsGUIEditor:
                         )
 
                 elif config["type"] == "string":
-                    value = var.get().strip()
-                    if not value:
+                    value_s = str(var.get()).strip()
+                    if not value_s:
                         errors.append(f"{config['label']}: 空文字は指定できません")
 
             except Exception as e:
@@ -485,8 +485,9 @@ class SettingsGUIEditor:
                 if config["type"] == "boolean":
                     new_value = var.get()
                 elif config["type"] == "choice":
-                    raw_value = var.get()
-                    if config["choices"] and isinstance(config["choices"][0], int):
+                    raw_value = str(var.get())
+                    choices = cast(list[Any], config["choices"])
+                    if choices and isinstance(choices[0], int):
                         new_value = int(raw_value)
                     else:
                         new_value = f'"{raw_value}"'
@@ -495,9 +496,9 @@ class SettingsGUIEditor:
                 elif config["type"] == "float":
                     new_value = var.get()
                 elif config["type"] == "string":
-                    new_value = f'"{var.get().strip()}"'
+                    new_value = f'"{str(var.get()).strip()}"'
                 elif config["type"] == "tuple_int":
-                    value_str = var.get().strip()
+                    value_str = str(var.get()).strip()
                     width, height = map(int, [x.strip() for x in value_str.split(",")])
                     new_value = f"({width}, {height})"
 

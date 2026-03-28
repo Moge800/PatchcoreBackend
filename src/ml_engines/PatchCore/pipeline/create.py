@@ -36,11 +36,11 @@ class FeatureExtractor(nn.Module):
     def forward(self, x):
         x = self.layer0(x)
         x = self.layer1(x)
-        if self.depth >= 2:
+        if self.depth >= 2 and self.layer2 is not None:
             x = self.layer2(x)
-        if self.depth >= 3:
+        if self.depth >= 3 and self.layer3 is not None:
             x = self.layer3(x)
-        if self.depth >= 4:
+        if self.depth >= 4 and self.layer4 is not None:
             x = self.layer4(x)
         return x
 

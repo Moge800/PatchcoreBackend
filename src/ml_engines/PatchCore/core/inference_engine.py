@@ -299,18 +299,27 @@ class PatchCoreInferenceEngine:
         Returns:
             整形された推論結果
         """
+        from src.types import ZScoreStats, Thresholds, ImageIds
+        z_stats_typed: ZScoreStats = {
+            "area": float(z_stats["area"]),
+            "maxval": float(z_stats["maxval"]),
+            "mean": float(z_stats["mean"]),
+            "std": float(z_stats["std"]),
+        }
+        thresholds_typed: Thresholds = {
+            "z_score": self.z_score_threshold,
+            "z_area": self.z_area_threshold,
+            "z_max": self.z_max_threshold,
+        }
+        image_id_typed: ImageIds = {
+            "original": f"org_{image_id}",
+            "overlay": f"ovr_{image_id}",
+        }
         return {
             "label": label,
-            "z_stats": cast(Dict[str, float], {k: float(v) for k, v in z_stats.items()}),  # type: ignore[typeddict-item]
-            "thresholds": {
-                "z_score": self.z_score_threshold,
-                "z_area": self.z_area_threshold,
-                "z_max": self.z_max_threshold,
-            },
-            "image_id": {
-                "original": f"org_{image_id}",
-                "overlay": f"ovr_{image_id}",
-            },
+            "z_stats": z_stats_typed,
+            "thresholds": thresholds_typed,
+            "image_id": image_id_typed,
         }
 
     def predict(self, image_array: np.ndarray) -> PredictionResult:

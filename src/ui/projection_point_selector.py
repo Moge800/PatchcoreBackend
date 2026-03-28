@@ -53,6 +53,8 @@ class ProjectionPointSelector:
             if self.points:
                 self.points.pop(-1)
 
+        if self.image is None:
+            return
         img = self.image.copy()
         h, w = img.shape[:2]
         cv2.line(img, (x, 0), (x, h), (255, 0, 0), 1)

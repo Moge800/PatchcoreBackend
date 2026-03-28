@@ -161,11 +161,9 @@ class JobQueue:
                     result["thresholds"] = raw_result["thresholds"]
                     result["z_stats"] = raw_result["z_stats"]
                 else:
-                    # basic: z_stats は最小限
-                    z = raw_result.get("z_stats", {})
-                    result["z_stats"] = {
-                        k: z[k] for k in ("z_score", "z_area", "z_max") if k in z
-                    }
+                    # basic: z_stats は最小限（area, maxval のみ）
+                    z = raw_result["z_stats"]
+                    result["z_stats"] = {"area": z["area"], "maxval": z["maxval"]}
 
                 job.result = result
                 job.status = JobStatus.COMPLETED
