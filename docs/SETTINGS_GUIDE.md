@@ -18,6 +18,8 @@ PatchCoreBackendでは、設定を**環境変数（.env）**と**モデル設定
 - `PCA_VARIANCE`: PCA分散保持率（異常検出精度に影響）
 - `ENABLE_AUGMENT`: データ拡張の有効化（学習時）
 - `SAVE_FORMAT`: メモリバンク保存形式（compressed/full）
+- `ENABLE_AUGMENT`: データ拡張の有効化（学習時）
+- `TEST_DIR`: テスト画像フォルダ名
 
 #### オプション項目（環境変数でオーバーライド可能）
 - `USE_GPU`: GPU使用設定（.envで上書き可能）
@@ -98,7 +100,7 @@ USE_GPU=True  # <- これが優先される
 ## GUI設定との関係
 
 ### GUIで変更可能な設定
-GUI（`model_create_gui.py`）では以下の設定を変更できます：
+GUI（`main_gui_launcher.py`）では以下の設定を変更できます：
 
 1. **モデル選択**: `main_settings.py`の`MODEL_NAME`を変更
 2. **アフィン座標取得**: `settings.py`の`AFFINE_POINTS`を更新
@@ -123,7 +125,6 @@ GUI（`model_create_gui.py`）では以下の設定を変更できます：
 
 ### .envの変更
 - アプリケーション再起動で即座に反映
-- APIサーバーは`/restart_engine?execute=true`で再起動可能
 
 ## 推奨される使用方法
 

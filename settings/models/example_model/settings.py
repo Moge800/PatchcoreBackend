@@ -40,8 +40,8 @@ FEATURE_DEPTH = 1
 # 異常検出精度に直接関与するためsettings.pyで管理
 PCA_VARIANCE = 0.95
 
-# メモリバンクの保存形式（"compressed" または "raw"）
-# "compressed" はPCAで次元削減された軽量形式、"raw" は元の特徴量をそのまま保存。
+# メモリバンクの保存形式（"compressed" または "full"）
+# "compressed" はPCAで次元削減された軽量形式、"full" は元の特徴量をそのまま保存。
 SAVE_FORMAT = "compressed"
 
 # -----実行環境設定（環境変数でオーバーライド可能）-----

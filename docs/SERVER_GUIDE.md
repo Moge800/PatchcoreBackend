@@ -198,7 +198,7 @@ curl http://localhost:8000/jobs/a1b2c3d4e5f67890abcdef12
       "original": "org_OK_20260328100000_a1b2",
       "overlay":  "ovr_OK_20260328100000_a1b2"
     },
-    "z_stats": { "z_score": 1.2, "z_area": 0.003, "z_max": 2.8 }
+    "z_stats": { "area": 15, "maxval": 2.8 }
   }
 }
 ```
@@ -302,7 +302,7 @@ img = cv2.imread("test.jpg")
 result = client.predict("example_model", img, detail_level="basic")
 
 print(result["label"])       # "OK" or "NG"
-print(result["z_stats"])     # z_score, z_area, z_max
+print(result["z_stats"])     # area, maxval
 
 # 画像を取得
 ovr = client.fetch_image("example_model", result["image_id"]["overlay"])

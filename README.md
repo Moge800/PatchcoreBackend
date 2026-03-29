@@ -119,8 +119,6 @@ python src/ml_engines/PatchCore/pipeline/create.py
 .\scripts\server_launch.ps1
 
 # または直接起動
-
-```bash
 uvicorn src.api.core.patchcore_api:app --host 0.0.0.0 --port 8000
 ```
 
@@ -130,22 +128,34 @@ uvicorn src.api.core.patchcore_api:app --host 0.0.0.0 --port 8000
 
 ```python
 from src.api.client.patchcore_api_client import PatchCoreApiClient
-from src.ml_engines.PatchCore.utils.inference_utils import load_image_unicode_path
+import cv2
 
 client = PatchCoreApiClient()
-image = load_image_unicode_path("test.png")
-result = client.predict(image)
+client.wait_for_server()
+
+# モデルをロード（起動時自動ロード設定がない場合）
+client.load_model("example_model")
+
+# 推論（ジョブ投入→ポーリング→結果取得を内包）
+image = cv2.imread("test.png")
+result = client.predict("example_model", image)
 
 print(f"判定: {result['label']}")  # OK or NG
-print(f"処理時間: {result['process_time']}秒")
+print(f"統計: {result['z_stats']}")
 ```
 
 **curl:**
 
 ```bash
-curl -X POST "http://localhost:8000/predict" \
-  -F "file=@test.png" \
-  -F "detail_level=basic"
+# 1. モデルをロード
+curl -X POST http://localhost:8000/models/example_model/load
+
+# 2. 推論ジョブを投入（job_id が返る）
+curl -X POST "http://localhost:8000/models/example_model/predict?detail_level=basic" \
+  -F "file=@test.png"
+
+# 3. 結果をポーリング（status が completed になるまで繰り返す）
+curl http://localhost:8000/jobs/{job_id}
 ```
 
 ## 🔧 設定
@@ -156,21 +166,21 @@ curl -X POST "http://localhost:8000/predict" \
 
 ```python
 # 画像処理設定
-AFFINE_POINTS = [[0, 0], [640, 0], [640, 480], [0, 480]]
+AFFINE_POINTS = [[152, 96], [422, 98], [494, 361], [33, 352]]
 IMAGE_SIZE = (224, 224)
 
 # 異常検知しきい値
-Z_SCORE_THRESHOLD = 3.0
-Z_AREA_THRESHOLD = 0.01
-Z_MAX_THRESHOLD = 5.0
+Z_SCORE_THRESHOLD = 4.5
+Z_AREA_THRESHOLD = 100
+Z_MAX_THRESHOLD = 10.0
 
 # GPU設定
-USE_GPU = False  # CPU推奨（バッチ=1の場合）
+USE_GPU = True
 GPU_DEVICE_ID = 0
-USE_MIXED_PRECISION = False
+USE_MIXED_PRECISION = True
 
 # モデル設定
-FEATURE_DEPTH = 2
+FEATURE_DEPTH = 1
 PCA_VARIANCE = 0.95
 SAVE_FORMAT = "compressed"
 ```
@@ -179,14 +189,19 @@ SAVE_FORMAT = "compressed"
 
 | メソッド | エンドポイント | 説明 |
 |---------|---------------|------|
-| POST | `/predict` | 異常検知推論 |
-| GET | `/get_image` | キャッシュ画像取得 |
-| GET | `/get_image_list` | 画像IDリスト取得 |
-| GET | `/status` | サーバー状態確認 |
-| GET | `/gpu_info` | GPU情報取得 |
+| GET | `/models` | モデル一覧 |
+| GET | `/models/{name}/status` | モデルステータス |
+| POST | `/models/{name}/load` | モデルをロード |
+| DELETE | `/models/{name}/unload` | モデルをアンロード |
+| DELETE | `/models/{name}` | モデルを完全削除 |
+| POST | `/models/{name}/predict` | 推論ジョブ投入 |
+| GET | `/jobs/{job_id}` | ジョブ状態・結果取得 |
+| GET | `/jobs` | ジョブ一覧 |
+| GET | `/models/{name}/images` | 画像ID一覧 |
+| GET | `/models/{name}/images/{id}` | キャッシュ画像取得（PNG） |
+| POST | `/models/{name}/images/clear` | 画像キャッシュクリア |
 | GET | `/system_info` | システム情報取得 |
-| POST | `/restart_engine` | エンジン再起動 |
-| POST | `/clear_image` | 画像キャッシュクリア |
+| GET | `/gpu_info` | GPU情報取得 |
 
 ## 🧪 テスト
 

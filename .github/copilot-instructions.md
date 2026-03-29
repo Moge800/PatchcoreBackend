@@ -608,7 +608,7 @@ settings/models/<model_name>/
 3. **設定調整**: GUIまたは直接`settings.py`編集
 4. **推論テスト**: `python tests/predict_test.py`
 5. **API起動**: `.\scripts\server_launch.ps1`
-6. **本番運用**: クライアントから`/engine/predict`を呼び出し
+6. **本番運用**: クライアントから`/models/{name}/predict`を呼び出し
 
 ---
 

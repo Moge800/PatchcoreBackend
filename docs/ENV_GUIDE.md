@@ -115,13 +115,19 @@ python -m src.config.env_loader
 - `DEBUG`: デバッグモード（True/False）
 
 ### APIサーバー設定
-- `API_HOST`: APIホスト（例: 0.0.0.0）
-- `API_PORT`: APIポート（例: 8000）
+- `API_SERVER_HOST`: サーバーがバインドするアドレス（例: 0.0.0.0）
+- `API_SERVER_PORT`: サーバーがリッスンするポート（例: 8000）
+- `API_CLIENT_HOST`: クライアントが接続するアドレス（例: 127.0.0.1）
+- `API_CLIENT_PORT`: クライアントが接続するポート（例: 8000）
 - `API_RELOAD`: 自動リロード（True/False）
 - `API_WORKERS`: ワーカー数
 
 ### モデル設定
 - `DEFAULT_MODEL_NAME`: デフォルトモデル名
+- `LOADED_MODELS`: 起動時に自動ロードするモデル名（カンマ区切り）
+
+### ジョブキュー設定
+- `JOB_QUEUE_TTL`: 完了ジョブの保持時間（秒、デフォルト: 3600）
 
 ### ログ設定
 - `LOG_LEVEL`: ログレベル（DEBUG, INFO, WARNING, ERROR, CRITICAL）
@@ -167,7 +173,6 @@ python -m src.config.env_loader
 
 ### 設定の変更
 - `.env`ファイルを変更した場合、アプリケーションの再起動が必要です
-- APIサーバーを再起動：`/restart_engine?execute=true`エンドポイント
 
 ### トラブルシューティング
 - `.env`ファイルが読み込まれない → プロジェクトルートに配置されているか確認

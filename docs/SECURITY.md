@@ -19,8 +19,9 @@ def verify_api_key(api_key: str = Security(api_key_header)):
         raise HTTPException(status_code=403, detail="Invalid API Key")
     return api_key
 
-@app.post("/predict")
+@app.post("/models/{model_name}/predict")
 async def predict(
+    model_name: str,
     api_key: str = Depends(verify_api_key),
     file: UploadFile = File(...)
 ):
@@ -53,7 +54,7 @@ from slowapi.util import get_remote_address
 
 limiter = Limiter(key_func=get_remote_address)
 
-@app.post("/predict")
+@app.post("/models/{model_name}/predict")
 @limiter.limit("10/minute")
 async def predict(...):
     # ...

@@ -232,15 +232,14 @@ curl -X POST "http://localhost:8000/models/example_model/predict?detail_level=ba
       "overlay":  "ovr_OK_20260328100000_a1b2"
     },
     "z_stats": {
-      "z_score": 1.2,
-      "z_area": 0.003,
-      "z_max": 2.8
+      "area": 15,
+      "maxval": 2.8
     }
   }
 }
 ```
 
-`detail_level=full` の場合は `result` に `thresholds` も含まれます。
+`detail_level=full` の場合は `result` に `thresholds` と完全な `z_stats`（`area`, `maxval`, `mean`, `std`）も含まれます。
 
 **レスポンス（失敗）:**
 ```json
