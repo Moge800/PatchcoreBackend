@@ -351,7 +351,6 @@ class ModelLauncherGUI:
             self.affine_button,
             self.train_button,
             self.inference_button,
-            self.confirm_button,
         ]
 
     def _on_model_select(self, event):
@@ -387,6 +386,7 @@ class ModelLauncherGUI:
         match = self.selected_model.get() == self.current_model_name
         for widget in self.control_widgets:
             widget.config(state=tk.NORMAL if match else tk.DISABLED)
+        self.confirm_button.config(state=tk.NORMAL)
 
     def _clear_log(self):
         """ログエリアをクリア"""
